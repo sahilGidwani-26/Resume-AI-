@@ -8,6 +8,8 @@ const navLinks = [
   { label: 'Upload Resume', path: '/upload', icon: '↑' },
   { label: 'Job Matches', path: '/jobs', icon: '◈' },
   { label: 'Resume Builder', path: '/builder', icon: '✦' },
+  { label: 'Roadmap', path: '/roadmap', icon: '🗺️' },
+  { label: 'Interview Prep', path: '/interview', icon: '🎯' },
 ];
 
 export default function Navbar() {

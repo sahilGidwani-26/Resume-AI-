@@ -12,6 +12,8 @@ import ResumeUploadPage from './pages/Resumeuploadpage';
 import ResumeAnalysisPage from './pages/Resumeanalysispage';
 import ResumeBuilderPage from './pages/Resumebuilderpage';
 import JobRecommendationsPage from './pages/Jobrecommendationspage';
+import RoadmapPage from './pages/Roadmappage';
+import InterviewPage from './pages/Interviewpage';
 
 // Layout
 import Navbar from './components/Navbar';
@@ -49,6 +51,8 @@ function AppRoutes() {
         <Route path="/analysis/:id" element={<ProtectedRoute><ResumeAnalysisPage /></ProtectedRoute>} />
         <Route path="/builder" element={<ProtectedRoute><ResumeBuilderPage /></ProtectedRoute>} />
         <Route path="/jobs" element={<ProtectedRoute><JobRecommendationsPage /></ProtectedRoute>} />
+        <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
+        <Route path="/interview" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
