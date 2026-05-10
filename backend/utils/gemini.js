@@ -1,24 +1,62 @@
-const axios = require('axios');
+const https = require('https');
 
+// ─── Groq API Call (100% Free) ────────────────────────────────────────────────
 const callAI = async (prompt) => {
-  const response = await axios.post(
-    'https://openrouter.ai/api/v1/chat/completions',
-    {
-      model: 'openrouter/free',
-      messages: [{ role: 'user', content: prompt }],
-    },
-    {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('GROQ_API_KEY not set in .env — Get free key from https://console.groq.com/keys');
+  }
+
+  const data = JSON.stringify({
+    model: 'llama-3.1-8b-instant',
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 2048,
+    temperature: 0.7
+  });
+
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.groq.com',
+      path: '/openai/v1/chat/completions',
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'ResumeAI',
-      },
-    }
-  );
-  let text = response.data.choices[0].message.content;
-  text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  return JSON.parse(text);
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Length': Buffer.byteLength(data)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          if (parsed.error) {
+            return reject(new Error(`Groq Error: ${parsed.error.message}`));
+          }
+          if (parsed.choices?.[0]?.message?.content) {
+            let text = parsed.choices[0].message.content;
+            text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            try {
+              return resolve(JSON.parse(text));
+            } catch {
+              return reject(new Error('JSON parse failed: ' + text.substring(0, 100)));
+            }
+          }
+          return reject(new Error('No content in Groq response'));
+        } catch (e) {
+          return reject(new Error('Response parse failed: ' + body.substring(0, 100)));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.setTimeout(30000, () => { req.destroy(); reject(new Error('Groq request timeout')); });
+    req.write(data);
+    req.end();
+  });
 };
 
 // ─── ANALYZE RESUME ───────────────────────────────────────────────────────────
@@ -39,7 +77,7 @@ MANDATORY: Fill ALL fields. weaknesses min 3-5, improvements min 4-6, missingSki
 Resume:
 ${resumeText}
 
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "atsScore": <realistic number>,
   "extractedSkills": ["skill1"],
@@ -59,7 +97,7 @@ Return ONLY raw JSON:
     if (!result.missingSkills?.length) result.missingSkills = ['System Design', 'Docker', 'CI/CD', 'Cloud'];
     return result;
   } catch (error) {
-    console.error('analyzeResume error:', error.response?.data || error.message);
+    console.error('analyzeResume error:', error.message);
     throw new Error('AI analysis failed');
   }
 };
@@ -72,7 +110,7 @@ Skills: ${skills.join(', ')}
 Experience: ${experience}
 Target Role: ${targetRole}
 
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "jobs": [
     { "title": "", "matchScore": 75, "description": "", "requiredSkills": [], "salaryRange": "X-Y LPA", "companies": [], "growth": "" }
@@ -88,7 +126,7 @@ const generateRoadmapFromForm = async ({ role, skills, experience, timeline }) =
 Create a detailed learning roadmap.
 Target Role: ${role}, Skills: ${skills}, Level: ${experience}, Timeline: ${timeline} months
 
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "overview": "2-3 sentence summary",
   "totalDuration": "${timeline} months",
@@ -106,7 +144,7 @@ const generateRoadmapFromResume = async (resumeText) => {
 Analyze resume and create personalized learning roadmap for next career level.
 Resume: ${resumeText}
 
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "overview": "2-3 sentence personalized summary",
   "totalDuration": "X months",
@@ -124,7 +162,7 @@ const generateInterviewFromForm = async ({ role, level, skills, company }) => {
 Generate realistic interview questions.
 Role: ${role}, Level: ${level}, Skills: ${skills}${company ? `, Company: ${company}` : ''}
 
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "role": "${role}",
   "tip": "One key tip",
@@ -141,7 +179,7 @@ const generateInterviewFromResume = async (resumeText) => {
 Generate personalized interview questions from this resume.
 Resume: ${resumeText}
 
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "role": "Detected role",
   "tip": "Personalized tip",
@@ -158,9 +196,7 @@ const generateMockInterviewQuestions = async ({ role, level, skills, company }) 
 You are a senior interviewer. Generate 10 mock interview questions for a real interview simulation.
 Role: ${role}, Level: ${level}, Skills: ${skills}${company ? `, Company: ${company}` : ''}
 
-Questions should feel like a REAL conversational interview, not generic.
-
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "questions": [
     {
@@ -171,7 +207,6 @@ Return ONLY raw JSON:
     }
   ]
 }
-
 Exactly 10 questions: 4 Technical, 3 Behavioral, 2 HR, 1 System Design.`;
   try { return await callAI(prompt); }
   catch (error) { throw new Error('Mock interview generation failed'); }
@@ -181,11 +216,9 @@ Exactly 10 questions: 4 Technical, 3 Behavioral, 2 HR, 1 System Design.`;
 const generateMockInterviewFromResume = async (resumeText) => {
   const prompt = `
 Analyze this resume and generate 10 realistic mock interview questions tailored to this candidate.
-Reference their actual projects, companies, and technologies.
-
 Resume: ${resumeText}
 
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "role": "Detected target role",
   "questions": [
@@ -197,7 +230,6 @@ Return ONLY raw JSON:
     }
   ]
 }
-
 Exactly 10 questions: 4 Technical, 3 Behavioral, 2 HR, 1 System Design.`;
   try { return await callAI(prompt); }
   catch (error) { throw new Error('Mock interview generation failed'); }
@@ -211,14 +243,7 @@ Role: ${role}, Level: ${level}
 Question: ${question}
 Candidate Answer: ${answer}
 
-SCORING:
-- Empty/very short: 10-25
-- Vague without examples: 30-50
-- Decent with some structure: 51-70
-- Good with examples/STAR: 71-85
-- Excellent comprehensive: 86-100
-
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "score": <0-100>,
   "good": "What candidate did well (2-3 specific sentences)",
@@ -242,7 +267,7 @@ Role: ${role}, Level: ${level}
 Interview Summary:
 ${qaSummary}
 
-Return ONLY raw JSON:
+Return ONLY raw JSON (no markdown, no backticks):
 {
   "summary": "3-4 sentence honest overall assessment",
   "strengths": ["Specific strength 1", "Strength 2", "Strength 3"],

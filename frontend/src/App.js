@@ -15,6 +15,9 @@ import RoadmapPage from './pages/Roadmappage';
 import InterviewPage from './pages/Interviewpage';
 import MockInterviewPage from './pages/Mockinterviewpage';
 import NotesPage from './pages/Notespage';   // ← new
+import PortfolioPage from './pages/Portfoliopage';
+import PortfolioAnalysisPage from './pages/Portfolioanalysispage';
+import PublicPortfolioPage from './pages/Publicportfoliopage';
 
 import Sidebar from './components/Sidebar';
 
@@ -50,19 +53,23 @@ function AppRoutes() {
         className={`flex-1 min-w-0 transition-all duration-300 ${user ? 'md:ml-[240px]' : ''}`}
       >
         <Routes>
-          <Route path="/"               element={<PublicRoute><LandingPage /></PublicRoute>} />
-          <Route path="/login"          element={<PublicRoute><LoginPage /></PublicRoute>} />
-          <Route path="/signup"         element={<PublicRoute><SignupPage /></PublicRoute>} />
-          <Route path="/dashboard"      element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/upload"         element={<ProtectedRoute><ResumeUploadPage /></ProtectedRoute>} />
-          <Route path="/analysis/:id"   element={<ProtectedRoute><ResumeAnalysisPage /></ProtectedRoute>} />
-          <Route path="/builder"        element={<ProtectedRoute><ResumeBuilderPage /></ProtectedRoute>} />
-          <Route path="/jobs"           element={<ProtectedRoute><JobRecommendationsPage /></ProtectedRoute>} />
-          <Route path="/roadmap"        element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
-          <Route path="/interview"      element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
+          <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
+          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/upload" element={<ProtectedRoute><ResumeUploadPage /></ProtectedRoute>} />
+          <Route path="/analysis/:id" element={<ProtectedRoute><ResumeAnalysisPage /></ProtectedRoute>} />
+          <Route path="/builder" element={<ProtectedRoute><ResumeBuilderPage /></ProtectedRoute>} />
+          <Route path="/jobs" element={<ProtectedRoute><JobRecommendationsPage /></ProtectedRoute>} />
+          <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
+          <Route path="/interview" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
           <Route path="/mock-interview" element={<ProtectedRoute><MockInterviewPage /></ProtectedRoute>} />
-          <Route path="/notes"          element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
-          <Route path="*"               element={<Navigate to="/" replace />} />
+          <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+          <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
+          <Route path="/portfolio/:id/analysis" element={<ProtectedRoute><PortfolioAnalysisPage /></ProtectedRoute>} />
+          <Route path="/portfolio/:slug" element={<PublicPortfolioPage />} />  {/* No auth — public */}
+
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
@@ -87,7 +94,7 @@ function App() {
                 fontSize: '14px',
               },
               success: { iconTheme: { primary: '#38bdf8', secondary: '#0f172a' } },
-              error:   { iconTheme: { primary: '#f87171', secondary: '#0f172a' } },
+              error: { iconTheme: { primary: '#f87171', secondary: '#0f172a' } },
             }}
           />
         </AuthProvider>
