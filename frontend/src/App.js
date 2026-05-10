@@ -18,6 +18,7 @@ import NotesPage from './pages/Notespage';   // ← new
 import PortfolioPage from './pages/Portfoliopage';
 import PortfolioAnalysisPage from './pages/Portfolioanalysispage';
 import PublicPortfolioPage from './pages/Publicportfoliopage';
+import ChatPage from './pages/Chatpage';
 
 import Sidebar from './components/Sidebar';
 
@@ -65,6 +66,12 @@ function AppRoutes() {
           <Route path="/interview" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
           <Route path="/mock-interview" element={<ProtectedRoute><MockInterviewPage /></ProtectedRoute>} />
           <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+          <Route path="/chat/:id" element={
+  <ProtectedRoute>
+    <ChatPage />
+  </ProtectedRoute>
+} />
           <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
           <Route path="/portfolio/:id/analysis" element={<ProtectedRoute><PortfolioAnalysisPage /></ProtectedRoute>} />
           <Route path="/portfolio/:slug" element={<PublicPortfolioPage />} />  {/* No auth — public */}

@@ -2,222 +2,120 @@ import { useState, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
+import {
+  Map, FileText, PencilLine, Sparkles, Download, Upload,
+  Lightbulb, ArrowRight, Briefcase, Zap, TrendingUp, Clock,
+  CheckCircle2, BookOpen, Route,
+} from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const steps_form = [
-  { label: 'Target Role', key: 'role', placeholder: 'e.g. Full Stack Developer', type: 'text' },
-  { label: 'Current Skills', key: 'skills', placeholder: 'e.g. HTML, CSS, JavaScript', type: 'text' },
-  { label: 'Experience Level', key: 'experience', placeholder: '', type: 'select', options: ['Beginner', 'Intermediate', 'Advanced'] },
-  { label: 'Timeline (months)', key: 'timeline', placeholder: 'e.g. 6', type: 'number' },
+  { label: 'Target Role', key: 'role', placeholder: 'e.g. Full Stack Developer', type: 'text', Icon: Briefcase },
+  { label: 'Current Skills', key: 'skills', placeholder: 'e.g. HTML, CSS, JavaScript', type: 'text', Icon: Zap },
+  { label: 'Experience Level', key: 'experience', placeholder: '', type: 'select', options: ['Beginner', 'Intermediate', 'Advanced'], Icon: TrendingUp },
+  { label: 'Timeline (months)', key: 'timeline', placeholder: 'e.g. 6', type: 'number', Icon: Clock },
 ];
 
 const downloadRoadmapPDF = (roadmap, formData) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageW = 210;
-  const pageH = 297;
-  const margin = 18;
-  const contentW = pageW - margin * 2;
+  const pageW = 210, pageH = 297, margin = 18, contentW = pageW - margin * 2;
   let y = 0;
 
   const checkPage = (needed = 10) => {
     if (y + needed > pageH - 15) {
       doc.addPage();
-      // Dark bg on new page
-      doc.setFillColor(15, 23, 42);
-      doc.rect(0, 0, pageW, pageH, 'F');
+      doc.setFillColor(15, 23, 42); doc.rect(0, 0, pageW, pageH, 'F');
       y = 20;
     }
   };
 
-  // ── COVER PAGE ─────────────────────────────────────────────────────────────
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageW, pageH, 'F');
-
-  doc.setFillColor(14, 165, 233);
-  doc.rect(0, 0, pageW, 3, 'F');
-
-  // Logo
-  doc.setFillColor(14, 165, 233);
-  doc.roundedRect(margin, 30, 12, 12, 2, 2, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
-  doc.text('R', margin + 4.2, 38.5);
-  doc.setFontSize(13);
-  doc.text('ResumeAI', margin + 16, 38.5);
-
-  // Big title
-  doc.setFontSize(32);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.text('Learning', margin, 105);
-  doc.setTextColor(14, 165, 233);
-  doc.text('Roadmap', margin, 120);
-
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(148, 163, 184);
+  doc.setFillColor(15, 23, 42); doc.rect(0, 0, pageW, pageH, 'F');
+  doc.setFillColor(14, 165, 233); doc.rect(0, 0, pageW, 3, 'F');
+  doc.setFillColor(14, 165, 233); doc.roundedRect(margin, 30, 12, 12, 2, 2, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+  doc.text('R', margin + 4.2, 38.5); doc.setFontSize(13); doc.text('ResumeAI', margin + 16, 38.5);
+  doc.setFontSize(32); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+  doc.text('Learning', margin, 105); doc.setTextColor(14, 165, 233); doc.text('Roadmap', margin, 120);
+  doc.setFontSize(12); doc.setFont('helvetica', 'normal'); doc.setTextColor(148, 163, 184);
   doc.text(formData?.role ? `For: ${formData.role}` : 'Personalized Career Path', margin, 133);
-
   if (roadmap.totalDuration) {
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(10); doc.setTextColor(100, 116, 139);
     doc.text(`Duration: ${roadmap.totalDuration}`, margin, 142);
   }
-
-  // Overview box
   if (roadmap.overview) {
-    doc.setFillColor(30, 41, 59);
-    doc.roundedRect(margin, 158, contentW, 58, 4, 4, 'F');
-    doc.setFillColor(14, 165, 233);
-    doc.roundedRect(margin, 158, 4, 58, 2, 2, 'F');
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(14, 165, 233);
-    doc.text('OVERVIEW', margin + 10, 169);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(203, 213, 225);
-    doc.setFontSize(10);
+    doc.setFillColor(30, 41, 59); doc.roundedRect(margin, 158, contentW, 58, 4, 4, 'F');
+    doc.setFillColor(14, 165, 233); doc.roundedRect(margin, 158, 4, 58, 2, 2, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(14, 165, 233);
+    doc.text('OVERVIEW', margin + 10, 169); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(203, 213, 225); doc.setFontSize(10);
     const lines = doc.splitTextToSize(roadmap.overview, contentW - 18);
     doc.text(lines.slice(0, 5), margin + 10, 177);
   }
-
-  doc.setFontSize(8);
-  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(8); doc.setTextColor(71, 85, 105);
   doc.text(`Generated by ResumeAI  •  ${new Date().toLocaleDateString('en-IN')}`, margin, pageH - 12);
 
-  // ── PHASE PAGES ────────────────────────────────────────────────────────────
-  const phaseColors = [
-    [14, 165, 233],
-    [139, 92, 246],
-    [16, 185, 129],
-    [245, 158, 11],
-    [239, 68, 68],
-  ];
-
+  const phaseColors = [[14,165,233],[139,92,246],[16,185,129],[245,158,11],[239,68,68]];
   roadmap.phases?.forEach((phase, i) => {
-    doc.addPage();
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageW, pageH, 'F');
-
+    doc.addPage(); doc.setFillColor(15, 23, 42); doc.rect(0, 0, pageW, pageH, 'F');
     const [r, g, b] = phaseColors[i % phaseColors.length];
-    doc.setFillColor(r, g, b);
-    doc.rect(0, 0, pageW, 2, 'F');
-
+    doc.setFillColor(r, g, b); doc.rect(0, 0, pageW, 2, 'F');
     y = 22;
-
-    // Phase badge circle
-    doc.setFillColor(r, g, b);
-    doc.circle(margin + 6, y + 5, 6, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(r, g, b); doc.circle(margin + 6, y + 5, 6, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
     doc.text(`${i + 1}`, margin + (i >= 9 ? 3.5 : 4.5), y + 7.5);
-
-    // Phase title
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
     doc.text(phase.title || `Phase ${i + 1}`, margin + 16, y + 7);
-
-    // Duration
     if (phase.duration) {
       y += 14;
-      doc.setFillColor(30, 41, 59);
-      doc.roundedRect(margin + 16, y, doc.getTextWidth(phase.duration) + 12, 8, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(r, g, b);
-      doc.text(phase.duration, margin + 22, y + 5.5);
-      y += 14;
-    } else {
-      y += 18;
-    }
-
-    // Topics
+      doc.setFillColor(30, 41, 59); doc.roundedRect(margin + 16, y, doc.getTextWidth(phase.duration) + 12, 8, 2, 2, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(r, g, b);
+      doc.text(phase.duration, margin + 22, y + 5.5); y += 14;
+    } else { y += 18; }
     if (phase.topics?.length) {
-      doc.setFillColor(22, 33, 51);
-      doc.roundedRect(margin, y, contentW, 9, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(r, g, b);
-      doc.text('TOPICS TO LEARN', margin + 6, y + 6);
-      y += 13;
-
-      phase.topics.forEach((topic) => {
+      doc.setFillColor(22, 33, 51); doc.roundedRect(margin, y, contentW, 9, 2, 2, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(r, g, b);
+      doc.text('TOPICS TO LEARN', margin + 6, y + 6); y += 13;
+      phase.topics.forEach(topic => {
         checkPage(12);
-        doc.setFillColor(r, g, b);
-        doc.circle(margin + 3, y + 2.5, 1.5, 'F');
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(203, 213, 225);
+        doc.setFillColor(r, g, b); doc.circle(margin + 3, y + 2.5, 1.5, 'F');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(203, 213, 225);
         const lines = doc.splitTextToSize(topic, contentW - 14);
-        doc.text(lines, margin + 8, y + 5);
-        y += lines.length * 6 + 3;
+        doc.text(lines, margin + 8, y + 5); y += lines.length * 6 + 3;
       });
       y += 6;
     }
-
-    // Resources
     if (phase.resources?.length) {
       checkPage(25);
-      doc.setFillColor(22, 33, 51);
-      doc.roundedRect(margin, y, contentW, 9, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(r, g, b);
-      doc.text('RESOURCES', margin + 6, y + 6);
-      y += 13;
-
-      phase.resources.forEach((res) => {
+      doc.setFillColor(22, 33, 51); doc.roundedRect(margin, y, contentW, 9, 2, 2, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(r, g, b);
+      doc.text('RESOURCES', margin + 6, y + 6); y += 13;
+      phase.resources.forEach(res => {
         checkPage(8);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(148, 163, 184);
-        doc.text(`• ${res}`, margin + 6, y);
-        y += 7;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(148, 163, 184);
+        doc.text(`• ${res}`, margin + 6, y); y += 7;
       });
     }
-
-    // Page label
-    doc.setFontSize(8);
-    doc.setTextColor(71, 85, 105);
+    doc.setFontSize(8); doc.setTextColor(71, 85, 105);
     doc.text(`Phase ${i + 1} of ${roadmap.phases.length}`, pageW - margin - 28, pageH - 10);
   });
 
-  // ── TIPS PAGE ──────────────────────────────────────────────────────────────
   if (roadmap.tips?.length) {
-    doc.addPage();
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageW, pageH, 'F');
-    doc.setFillColor(139, 92, 246);
-    doc.rect(0, 0, pageW, 2, 'F');
-
+    doc.addPage(); doc.setFillColor(15, 23, 42); doc.rect(0, 0, pageW, pageH, 'F');
+    doc.setFillColor(139, 92, 246); doc.rect(0, 0, pageW, 2, 'F');
     y = 25;
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text('Pro Tips', margin, y);
-    y += 14;
-
+    doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+    doc.text('Pro Tips', margin, y); y += 14;
     roadmap.tips.forEach((tip, i) => {
       checkPage(25);
       const tipLines = doc.splitTextToSize(tip, contentW - 22);
       const boxH = tipLines.length * 6 + 16;
-      doc.setFillColor(30, 41, 59);
-      doc.roundedRect(margin, y, contentW, boxH, 4, 4, 'F');
-      doc.setFillColor(139, 92, 246);
-      doc.roundedRect(margin, y, 4, boxH, 2, 2, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(167, 139, 250);
+      doc.setFillColor(30, 41, 59); doc.roundedRect(margin, y, contentW, boxH, 4, 4, 'F');
+      doc.setFillColor(139, 92, 246); doc.roundedRect(margin, y, 4, boxH, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(167, 139, 250);
       doc.text(`Tip ${i + 1}`, margin + 10, y + 9);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(203, 213, 225);
-      doc.text(tipLines, margin + 10, y + 17);
-      y += boxH + 6;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(203, 213, 225);
+      doc.text(tipLines, margin + 10, y + 17); y += boxH + 6;
     });
   }
 
@@ -232,14 +130,12 @@ export default function RoadmapPage() {
   const [loading, setLoading] = useState(false);
   const [roadmap, setRoadmap] = useState(null);
   const fileRef = useRef();
-
   const token = localStorage.getItem('token');
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!form.role || !form.skills || !form.timeline) return toast.error('Please fill all fields');
-    setLoading(true);
-    setRoadmap(null);
+    setLoading(true); setRoadmap(null);
     try {
       const { data } = await axios.post(`${API}/resume/roadmap`, { ...form }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -247,16 +143,13 @@ export default function RoadmapPage() {
       setRoadmap(data.roadmap);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to generate roadmap');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleResumeSubmit = async (e) => {
     e.preventDefault();
     if (!file) return toast.error('Please upload a resume PDF');
-    setLoading(true);
-    setRoadmap(null);
+    setLoading(true); setRoadmap(null);
     try {
       const fd = new FormData();
       fd.append('resume', file);
@@ -266,145 +159,185 @@ export default function RoadmapPage() {
       setRoadmap(data.roadmap);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to generate roadmap');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 py-10 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="w-full py-8 px-4 sm:px-6">
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-1">🗺️ Roadmap Generator</h1>
-          <p className="text-slate-400">Get a personalized learning roadmap powered by AI</p>
-        </div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
+          <Map size={28} className="text-sky-400" /> Roadmap Generator
+        </h1>
+        <p className="text-slate-400">Get a personalized learning roadmap powered by AI</p>
+      </div>
 
-        <div className="flex gap-2 mb-6 p-1 bg-slate-900 rounded-xl w-fit border border-white/5">
-          {['form', 'resume'].map(t => (
-            <button key={t} onClick={() => { setTab(t); setRoadmap(null); }}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${tab === t ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}>
-              {t === 'form' ? '📝 Fill Form' : '📄 Upload Resume'}
-            </button>
-          ))}
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 p-1 bg-slate-900 rounded-xl w-fit border border-white/5">
+        {[
+          { id: 'form', label: 'Fill Form', Icon: PencilLine },
+          { id: 'resume', label: 'Upload Resume', Icon: FileText },
+        ].map(({ id, label, Icon }) => (
+          <button key={id} onClick={() => { setTab(id); setRoadmap(null); }}
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${tab === id ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}>
+            <Icon size={15} /> {label}
+          </button>
+        ))}
+      </div>
 
-        {tab === 'form' && (
-          <form onSubmit={handleFormSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 space-y-4 mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {steps_form.map(f => (
-                <div key={f.key}>
-                  <label className="block text-sm text-slate-400 mb-1.5">{f.label}</label>
-                  {f.type === 'select' ? (
-                    <select value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500">
-                      {f.options.map(o => <option key={o}>{o}</option>)}
-                    </select>
-                  ) : (
-                    <input type={f.type} placeholder={f.placeholder} value={form[f.key]}
-                      onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
-                  )}
-                </div>
-              ))}
-            </div>
-            <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50">
-              {loading ? 'Generating Roadmap...' : '✨ Generate My Roadmap'}
-            </button>
-          </form>
-        )}
-
-        {tab === 'resume' && (
-          <form onSubmit={handleResumeSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 mb-6">
-            <div onClick={() => fileRef.current.click()}
-              className="border-2 border-dashed border-white/10 rounded-xl p-10 text-center cursor-pointer hover:border-sky-500/50 transition mb-4">
-              <div className="text-4xl mb-3">📄</div>
-              <p className="text-slate-400 text-sm">
-                {file ? <span className="text-sky-400 font-medium">{file.name}</span> : 'Click to upload your resume PDF'}
-              </p>
-              <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files[0])} />
-            </div>
-            <button type="submit" disabled={loading || !file}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50">
-              {loading ? 'Analyzing & Generating...' : '✨ Generate Roadmap from Resume'}
-            </button>
-          </form>
-        )}
-
-        {loading && (
-          <div className="flex flex-col items-center gap-4 py-16">
-            <div className="w-12 h-12 border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm">AI is crafting your personalized roadmap...</p>
-          </div>
-        )}
-
-        {roadmap && !loading && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-semibold text-white">Your Learning Roadmap</h2>
-              <div className="flex items-center gap-3">
-                {roadmap.totalDuration && (
-                  <span className="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-white/5">{roadmap.totalDuration}</span>
-                )}
-                <button onClick={() => downloadRoadmapPDF(roadmap, form)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white text-sm font-medium hover:opacity-90 transition">
-                  ⬇ Download PDF
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-slate-900 border border-white/5 rounded-2xl p-5">
-              <p className="text-slate-300 text-sm leading-relaxed">{roadmap.overview}</p>
-            </div>
-
-            {roadmap.phases?.map((phase, i) => (
-              <div key={i} className="bg-slate-900 border border-white/5 rounded-2xl p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold">{i + 1}</div>
-                  <div>
-                    <h3 className="text-white font-semibold">{phase.title}</h3>
-                    <span className="text-xs text-sky-400">{phase.duration}</span>
-                  </div>
-                </div>
-                <div className="space-y-2 mb-4">
-                  {phase.topics?.map((topic, j) => (
-                    <div key={j} className="flex items-start gap-2 text-sm text-slate-300">
-                      <span className="text-sky-500 mt-0.5">→</span><span>{topic}</span>
-                    </div>
-                  ))}
-                </div>
-                {phase.resources?.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-white/5">
-                    <p className="text-xs text-slate-500 mb-2">Resources</p>
-                    <div className="flex flex-wrap gap-2">
-                      {phase.resources.map((r, k) => (
-                        <span key={k} className="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-white/5">{r}</span>
-                      ))}
-                    </div>
-                  </div>
+      {/* Form Tab */}
+      {tab === 'form' && (
+        <form onSubmit={handleFormSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 space-y-4 mb-6 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {steps_form.map(({ key, label, placeholder, type, options, Icon }) => (
+              <div key={key}>
+                <label className="block text-sm text-slate-400 mb-1.5 items-center gap-1.5">
+                  <Icon size={13} /> {label}
+                </label>
+                {type === 'select' ? (
+                  <select value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500">
+                    {options.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <input type={type} placeholder={placeholder} value={form[key]}
+                    onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
                 )}
               </div>
             ))}
+          </div>
+          <button type="submit" disabled={loading}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
+            <Sparkles size={16} /> {loading ? 'Generating Roadmap...' : 'Generate My Roadmap'}
+          </button>
+        </form>
+      )}
 
-            {roadmap.tips?.length > 0 && (
-              <div className="bg-violet-500/5 border border-violet-500/20 rounded-2xl p-5">
-                <h3 className="text-violet-400 font-semibold mb-3">💡 Pro Tips</h3>
-                <div className="space-y-2">
-                  {roadmap.tips.map((tip, i) => (
-                    <p key={i} className="text-sm text-slate-300">• {tip}</p>
-                  ))}
+      {/* Resume Tab */}
+      {tab === 'resume' && (
+        <form onSubmit={handleResumeSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 mb-6 w-full">
+          <div onClick={() => fileRef.current.click()}
+            className="border-2 border-dashed border-white/10 rounded-xl p-10 text-center cursor-pointer hover:border-sky-500/50 transition mb-4">
+            <Upload size={36} className="text-slate-500 mx-auto mb-3" />
+            <p className="text-slate-400 text-sm">
+              {file
+                ? <span className="text-sky-400 font-medium flex items-center justify-center gap-1.5"><CheckCircle2 size={14} />{file.name}</span>
+                : 'Click to upload your resume PDF'}
+            </p>
+            <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files[0])} />
+          </div>
+          <button type="submit" disabled={loading || !file}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
+            <Sparkles size={16} /> {loading ? 'Analyzing & Generating...' : 'Generate Roadmap from Resume'}
+          </button>
+        </form>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex flex-col items-center gap-4 py-16">
+          <div className="w-12 h-12 border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">AI is crafting your personalized roadmap...</p>
+        </div>
+      )}
+
+      {/* Results */}
+      {roadmap && !loading && (
+        <div className="space-y-4 w-full">
+
+          {/* Header row */}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              <Route size={18} className="text-sky-400" /> Your Learning Roadmap
+            </h2>
+            <div className="flex items-center gap-3">
+              {roadmap.totalDuration && (
+                <span className="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-white/5 flex items-center gap-1">
+                  <Clock size={11} /> {roadmap.totalDuration}
+                </span>
+              )}
+              <button onClick={() => downloadRoadmapPDF(roadmap, form)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white text-sm font-medium hover:opacity-90 transition">
+                <Download size={15} /> Download PDF
+              </button>
+            </div>
+          </div>
+
+          {/* Overview */}
+          <div className="bg-slate-900 border border-white/5 rounded-2xl p-5 w-full">
+            <p className="text-slate-300 text-sm leading-relaxed">{roadmap.overview}</p>
+          </div>
+
+          {/* Phases */}
+          {roadmap.phases?.map((phase, i) => (
+            <div key={i} className="bg-slate-900 border border-white/5 rounded-2xl p-5 w-full">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{i + 1}</div>
+                <div>
+                  <h3 className="text-white font-semibold">{phase.title}</h3>
+                  <span className="text-xs text-sky-400 flex items-center gap-1"><Clock size={10} />{phase.duration}</span>
                 </div>
               </div>
-            )}
+              <div className="space-y-2 mb-4">
+                {phase.topics?.map((topic, j) => {
+                  const label = typeof topic === 'string' ? topic : topic?.title || topic?.name || topic?.description || '';
+                  const desc  = typeof topic === 'object' ? topic?.description : null;
+                  return (
+                    <div key={j} className="flex items-start gap-2 text-sm text-slate-300">
+                      <ArrowRight size={14} className="text-sky-500 mt-1 shrink-0" />
+                      <span>{label}{desc && label !== desc ? ` — ${desc}` : ''}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {phase.resources?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <p className="text-xs text-slate-500 mb-2 flex items-center gap-1"><BookOpen size={11} /> Resources</p>
+                  <div className="flex flex-wrap gap-2">
+                    {phase.resources.map((r, k) => {
+                      const label = typeof r === 'string' ? r : r?.name || r?.url || '';
+                      const href  = typeof r === 'object' ? r?.url : null;
+                      return href ? (
+                        <a key={k} href={href} target="_blank" rel="noopener noreferrer"
+                          className="text-xs bg-slate-800 text-sky-400 px-3 py-1 rounded-full border border-white/5 hover:border-sky-500/30 transition-colors">
+                          {label}
+                        </a>
+                      ) : (
+                        <span key={k} className="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-white/5">{label}</span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
 
-            <button onClick={() => downloadRoadmapPDF(roadmap, form)}
-              className="w-full py-3 rounded-xl border border-sky-500/30 text-sky-400 text-sm font-medium hover:bg-sky-500/10 transition flex items-center justify-center gap-2">
-              ⬇ Download Full Roadmap as PDF
-            </button>
-          </div>
-        )}
-      </div>
+          {/* Tips */}
+          {roadmap.tips?.length > 0 && (
+            <div className="bg-violet-500/5 border border-violet-500/20 rounded-2xl p-5 w-full">
+              <h3 className="text-violet-400 font-semibold mb-3 flex items-center gap-2">
+                <Lightbulb size={17} /> Pro Tips
+              </h3>
+              <div className="space-y-2">
+                {roadmap.tips.map((tip, i) => (
+                  <p key={i} className="text-sm text-slate-300 flex items-start gap-2">
+                    <ArrowRight size={13} className="text-violet-400 mt-1 shrink-0" />
+                    {typeof tip === 'string' ? tip : tip?.text || tip?.tip || ''}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bottom download */}
+          <button onClick={() => downloadRoadmapPDF(roadmap, form)}
+            className="w-full py-3 rounded-xl border border-sky-500/30 text-sky-400 text-sm font-medium hover:bg-sky-500/10 transition flex items-center justify-center gap-2">
+            <Download size={15} /> Download All as PDF
+          </button>
+        </div>
+      )}
     </div>
   );
 }

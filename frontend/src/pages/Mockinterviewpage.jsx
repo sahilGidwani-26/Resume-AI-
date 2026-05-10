@@ -3,12 +3,11 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import {
-  Mic, MicOff, Volume2, VolumeX, ChevronRight, RotateCcw,
+  Mic, Volume2, ChevronRight, RotateCcw,
   Download, CheckCircle2, AlertCircle, Lightbulb, Trophy,
   FileText, ClipboardList, Settings, BarChart3, Star,
   Clock, Target, TrendingUp, Loader2, Play, Square,
-  Upload, BookOpen, Zap, MessageSquare, ArrowRight,
-  Circle, CheckCheck, XCircle
+  Upload, BookOpen, Zap, MessageSquare, ArrowRight, CheckCheck
 } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';

@@ -11,6 +11,7 @@ const jobRoutes = require('./routes/job.routes');
 const userRoutes = require('./routes/user.routes');
 const noteRoutes = require('./routes/noteroutes');
 const portfolioRoutes = require('./routes/portfolio.routes');
+const chatRoutes = require('./routes/chat.routes');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/portfolio', portfolioRoutes);
+app.use('/api/chat', chatRoutes);
 
 // ─── Health Check ─────────────────────────────────────
 app.get('/api/health', (req, res) => {

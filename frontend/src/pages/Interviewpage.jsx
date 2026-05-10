@@ -2,6 +2,11 @@ import { useState, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
+import {
+  Target, FileText, ClipboardList, Upload, Download, Lightbulb,
+  ChevronDown, Settings, Brain, Layout, Users, HelpCircle,
+  Briefcase, Layers, Star, TrendingUp, Zap, BookOpen, CheckCircle2
+} from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -11,16 +16,20 @@ const difficultyColors = {
   Hard: 'text-red-400 bg-red-500/10 border-red-500/20',
 };
 
-const categoryIcons = {
-  Technical: '⚙️', Behavioral: '🧠', 'System Design': '🏗️', HR: '👥', Default: '❓',
+const CategoryIcon = ({ category, size = 18 }) => {
+  const map = {
+    Technical: <Settings size={size} className="text-sky-400" />,
+    Behavioral: <Brain size={size} className="text-violet-400" />,
+    'System Design': <Layout size={size} className="text-amber-400" />,
+    HR: <Users size={size} className="text-green-400" />,
+    Default: <HelpCircle size={size} className="text-slate-400" />,
+  };
+  return map[category] || map.Default;
 };
 
 const downloadInterviewPDF = (result, formData) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageW = 210;
-  const pageH = 297;
-  const margin = 18;
-  const contentW = pageW - margin * 2;
+  const pageW = 210, pageH = 297, margin = 18, contentW = 210 - 18 * 2;
   let y = 0;
 
   const checkPage = (needed = 10) => {
@@ -32,182 +41,87 @@ const downloadInterviewPDF = (result, formData) => {
     }
   };
 
-  const diffColors = {
-    Easy: [16, 185, 129],
-    Medium: [245, 158, 11],
-    Hard: [239, 68, 68],
-  };
+  const diffColors = { Easy: [16,185,129], Medium: [245,158,11], Hard: [239,68,68] };
+  const catColors = { Technical: [14,165,233], Behavioral: [139,92,246], 'System Design': [245,158,11], HR: [16,185,129] };
 
-  const catColors = {
-    Technical: [14, 165, 233],
-    Behavioral: [139, 92, 246],
-    'System Design': [245, 158, 11],
-    HR: [16, 185, 129],
-  };
-
-  // ── COVER ──────────────────────────────────────────────────────────────────
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageW, pageH, 'F');
-  doc.setFillColor(14, 165, 233);
-  doc.rect(0, 0, pageW, 3, 'F');
-
-  // Logo
-  doc.setFillColor(14, 165, 233);
-  doc.roundedRect(margin, 30, 12, 12, 2, 2, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
-  doc.text('R', margin + 4.2, 38.5);
-  doc.setFontSize(13);
-  doc.text('ResumeAI', margin + 16, 38.5);
-
-  // Title
-  doc.setFontSize(32);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.text('Interview', margin, 105);
-  doc.setTextColor(14, 165, 233);
-  doc.text('Question Bank', margin, 120);
-
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(148, 163, 184);
+  doc.setFillColor(15, 23, 42); doc.rect(0,0,pageW,pageH,'F');
+  doc.setFillColor(14,165,233); doc.rect(0,0,pageW,3,'F');
+  doc.setFillColor(14,165,233); doc.roundedRect(margin,30,12,12,2,2,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(255,255,255);
+  doc.text('R', margin+4.2, 38.5); doc.setFontSize(13); doc.text('ResumeAI', margin+16, 38.5);
+  doc.setFontSize(32); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Interview', margin, 105); doc.setTextColor(14,165,233); doc.text('Question Bank', margin, 120);
+  doc.setFontSize(12); doc.setFont('helvetica','normal'); doc.setTextColor(148,163,184);
   doc.text(`Role: ${result.role || formData?.role || 'General'}`, margin, 133);
 
-  // Stats row
   const questions = result.questions || [];
-  const easy = questions.filter(q => q.difficulty === 'Easy').length;
-  const medium = questions.filter(q => q.difficulty === 'Medium').length;
-  const hard = questions.filter(q => q.difficulty === 'Hard').length;
-
+  const easy = questions.filter(q=>q.difficulty==='Easy').length;
+  const medium = questions.filter(q=>q.difficulty==='Medium').length;
+  const hard = questions.filter(q=>q.difficulty==='Hard').length;
   const stats = [
-    { label: 'Total', val: questions.length, color: [14, 165, 233] },
-    { label: 'Easy', val: easy, color: [16, 185, 129] },
-    { label: 'Medium', val: medium, color: [245, 158, 11] },
-    { label: 'Hard', val: hard, color: [239, 68, 68] },
+    {label:'Total',val:questions.length,color:[14,165,233]},
+    {label:'Easy',val:easy,color:[16,185,129]},
+    {label:'Medium',val:medium,color:[245,158,11]},
+    {label:'Hard',val:hard,color:[239,68,68]},
   ];
-
-  stats.forEach((s, i) => {
-    const x = margin + i * 46;
-    doc.setFillColor(30, 41, 59);
-    doc.roundedRect(x, 148, 42, 26, 3, 3, 'F');
-    doc.setFillColor(...s.color);
-    doc.roundedRect(x, 148, 42, 3, 1, 1, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`${s.val}`, x + 6, 163);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    doc.text(s.label, x + 6, 170);
+  stats.forEach((s,i)=>{
+    const x=margin+i*46;
+    doc.setFillColor(30,41,59); doc.roundedRect(x,148,42,26,3,3,'F');
+    doc.setFillColor(...s.color); doc.roundedRect(x,148,42,3,1,1,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(255,255,255);
+    doc.text(`${s.val}`,x+6,163); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    doc.setTextColor(100,116,139); doc.text(s.label,x+6,170);
   });
 
-  // Tip box
   if (result.tip) {
-    doc.setFillColor(30, 41, 59);
-    doc.roundedRect(margin, 185, contentW, 40, 4, 4, 'F');
-    doc.setFillColor(245, 158, 11);
-    doc.roundedRect(margin, 185, 4, 40, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(251, 191, 36);
-    doc.text('PRO TIP', margin + 10, 195);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(203, 213, 225);
-    const tipLines = doc.splitTextToSize(result.tip, contentW - 18);
-    doc.text(tipLines.slice(0, 4), margin + 10, 203);
+    doc.setFillColor(30,41,59); doc.roundedRect(margin,185,contentW,40,4,4,'F');
+    doc.setFillColor(245,158,11); doc.roundedRect(margin,185,4,40,2,2,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(251,191,36);
+    doc.text('PRO TIP',margin+10,195); doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.setTextColor(203,213,225);
+    const tipLines=doc.splitTextToSize(result.tip,contentW-18);
+    doc.text(tipLines.slice(0,4),margin+10,203);
   }
+  doc.setFontSize(8); doc.setTextColor(71,85,105);
+  doc.text(`Generated by ResumeAI  •  ${new Date().toLocaleDateString('en-IN')}`,margin,pageH-12);
 
-  doc.setFontSize(8);
-  doc.setTextColor(71, 85, 105);
-  doc.text(`Generated by ResumeAI  •  ${new Date().toLocaleDateString('en-IN')}`, margin, pageH - 12);
+  doc.addPage(); doc.setFillColor(15,23,42); doc.rect(0,0,pageW,pageH,'F');
+  doc.setFillColor(14,165,233); doc.rect(0,0,pageW,2,'F'); y=20;
 
-  // ── QUESTIONS ──────────────────────────────────────────────────────────────
-  doc.addPage();
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageW, pageH, 'F');
-  doc.setFillColor(14, 165, 233);
-  doc.rect(0, 0, pageW, 2, 'F');
-
-  y = 20;
-
-  questions.forEach((q, i) => {
-    const qLines = doc.splitTextToSize(q.question, contentW - 20);
-    const hintLines = q.hint ? doc.splitTextToSize(q.hint, contentW - 22) : [];
-    const kwLines = q.keywords?.length ? [q.keywords.join('  •  ')] : [];
-    const kwWrapped = kwLines.length ? doc.splitTextToSize(kwLines[0], contentW - 22) : [];
-
-    const boxH = 10 + qLines.length * 6 + (hintLines.length ? 8 + hintLines.length * 5.5 : 0) + (kwWrapped.length ? 7 + kwWrapped.length * 5 : 0) + 8;
-
-    checkPage(boxH + 6);
-
-    const [cr, cg, cb] = catColors[q.category] || [100, 116, 139];
-    const [dr, dg, db] = diffColors[q.difficulty] || [100, 116, 139];
-
-    // Card bg
-    doc.setFillColor(22, 33, 51);
-    doc.roundedRect(margin, y, contentW, boxH, 4, 4, 'F');
-
-    // Left accent bar
-    doc.setFillColor(cr, cg, cb);
-    doc.roundedRect(margin, y, 4, boxH, 2, 2, 'F');
-
-    // Question number
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(cr, cg, cb);
-    doc.text(`Q${i + 1}`, margin + 10, y + 8);
-
-    // Category
-    doc.setTextColor(cr, cg, cb);
-    doc.text(q.category || '', margin + 22, y + 8);
-
-    // Difficulty badge
-    const diffW = doc.getTextWidth(q.difficulty || '') + 8;
-    doc.setFillColor(dr, dg, db, 0.15);
-    doc.setFillColor(30, 41, 59);
-    doc.roundedRect(margin + contentW - diffW - 4, y + 3, diffW, 6.5, 1.5, 1.5, 'F');
-    doc.setTextColor(dr, dg, db);
-    doc.setFontSize(7);
-    doc.text(q.difficulty || '', margin + contentW - diffW, y + 7.5);
-
-    // Question text
-    let innerY = y + 14;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(255, 255, 255);
-    doc.text(qLines, margin + 10, innerY);
-    innerY += qLines.length * 6 + 4;
-
-    // Hint
-    if (hintLines.length) {
-      doc.setFillColor(15, 23, 42);
-      doc.roundedRect(margin + 10, innerY, contentW - 14, hintLines.length * 5.5 + 8, 2, 2, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(148, 163, 184);
-      doc.text('APPROACH', margin + 15, innerY + 5.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      doc.setTextColor(203, 213, 225);
-      doc.text(hintLines, margin + 15, innerY + 11);
-      innerY += hintLines.length * 5.5 + 10;
+  questions.forEach((q,i)=>{
+    const qLines=doc.splitTextToSize(q.question,contentW-20);
+    const hintLines=q.hint?doc.splitTextToSize(q.hint,contentW-22):[];
+    const kwLines=q.keywords?.length?[q.keywords.join('  •  ')]:[];
+    const kwWrapped=kwLines.length?doc.splitTextToSize(kwLines[0],contentW-22):[];
+    const boxH=10+qLines.length*6+(hintLines.length?8+hintLines.length*5.5:0)+(kwWrapped.length?7+kwWrapped.length*5:0)+8;
+    checkPage(boxH+6);
+    const [cr,cg,cb]=catColors[q.category]||[100,116,139];
+    const [dr,dg,db]=diffColors[q.difficulty]||[100,116,139];
+    doc.setFillColor(22,33,51); doc.roundedRect(margin,y,contentW,boxH,4,4,'F');
+    doc.setFillColor(cr,cg,cb); doc.roundedRect(margin,y,4,boxH,2,2,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(cr,cg,cb);
+    doc.text(`Q${i+1}`,margin+10,y+8); doc.text(q.category||'',margin+22,y+8);
+    const diffW=doc.getTextWidth(q.difficulty||'')+8;
+    doc.setFillColor(30,41,59); doc.roundedRect(margin+contentW-diffW-4,y+3,diffW,6.5,1.5,1.5,'F');
+    doc.setTextColor(dr,dg,db); doc.setFontSize(7); doc.text(q.difficulty||'',margin+contentW-diffW,y+7.5);
+    let innerY=y+14;
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255,255,255);
+    doc.text(qLines,margin+10,innerY); innerY+=qLines.length*6+4;
+    if(hintLines.length){
+      doc.setFillColor(15,23,42); doc.roundedRect(margin+10,innerY,contentW-14,hintLines.length*5.5+8,2,2,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(148,163,184);
+      doc.text('APPROACH',margin+15,innerY+5.5); doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+      doc.setTextColor(203,213,225); doc.text(hintLines,margin+15,innerY+11);
+      innerY+=hintLines.length*5.5+10;
     }
-
-    // Keywords
-    if (kwWrapped.length) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(cr, cg, cb);
-      doc.text(kwWrapped, margin + 10, innerY + 4);
+    if(kwWrapped.length){
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(cr,cg,cb);
+      doc.text(kwWrapped,margin+10,innerY+4);
     }
-
-    y += boxH + 5;
+    y+=boxH+5;
   });
 
-  doc.save(`ResumeAI_Interview_${(result.role || formData?.role || 'Questions').replace(/\s+/g, '_')}.pdf`);
+  doc.save(`ResumeAI_Interview_${(result.role||formData?.role||'Questions').replace(/\s+/g,'_')}.pdf`);
   toast.success('PDF downloaded successfully!');
 };
 
@@ -219,15 +133,12 @@ export default function InterviewPage() {
   const [result, setResult] = useState(null);
   const [expanded, setExpanded] = useState({});
   const fileRef = useRef();
-
   const token = localStorage.getItem('token');
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!form.role || !form.skills) return toast.error('Please fill role and skills');
-    setLoading(true);
-    setResult(null);
-    setExpanded({});
+    setLoading(true); setResult(null); setExpanded({});
     try {
       const { data } = await axios.post(`${API}/resume/interview`, { ...form }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -235,17 +146,13 @@ export default function InterviewPage() {
       setResult(data.interview);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to generate questions');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleResumeSubmit = async (e) => {
     e.preventDefault();
     if (!file) return toast.error('Please upload a resume PDF');
-    setLoading(true);
-    setResult(null);
-    setExpanded({});
+    setLoading(true); setResult(null); setExpanded({});
     try {
       const fd = new FormData();
       fd.append('resume', file);
@@ -255,167 +162,193 @@ export default function InterviewPage() {
       setResult(data.interview);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to generate questions');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const toggleExpand = (i) => setExpanded(p => ({ ...p, [i]: !p[i] }));
 
   return (
-    <div className="min-h-screen bg-slate-950 py-10 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="w-full py-8 px-4 sm:px-6">
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-1">🎯 Interview Predictor</h1>
-          <p className="text-slate-400">AI-predicted questions tailored to your profile and target role</p>
-        </div>
-
-        <div className="flex gap-2 mb-6 p-1 bg-slate-900 rounded-xl w-fit border border-white/5">
-          {['form', 'resume'].map(t => (
-            <button key={t} onClick={() => { setTab(t); setResult(null); }}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${tab === t ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}>
-              {t === 'form' ? '📝 Fill Form' : '📄 Upload Resume'}
-            </button>
-          ))}
-        </div>
-
-        {tab === 'form' && (
-          <form onSubmit={handleFormSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 space-y-4 mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-slate-400 mb-1.5">Target Role *</label>
-                <input type="text" placeholder="e.g. Frontend Developer" value={form.role}
-                  onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1.5">Experience Level</label>
-                <select value={form.level} onChange={e => setForm(p => ({ ...p, level: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500">
-                  {['Fresher', 'Junior', 'Mid-level', 'Senior'].map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1.5">Your Skills *</label>
-                <input type="text" placeholder="e.g. React, Node.js, MongoDB" value={form.skills}
-                  onChange={e => setForm(p => ({ ...p, skills: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1.5">Target Company (optional)</label>
-                <input type="text" placeholder="e.g. Google, TCS, Infosys" value={form.company}
-                  onChange={e => setForm(p => ({ ...p, company: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
-              </div>
-            </div>
-            <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50">
-              {loading ? 'Predicting Questions...' : '🎯 Predict Interview Questions'}
-            </button>
-          </form>
-        )}
-
-        {tab === 'resume' && (
-          <form onSubmit={handleResumeSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 mb-6">
-            <div onClick={() => fileRef.current.click()}
-              className="border-2 border-dashed border-white/10 rounded-xl p-10 text-center cursor-pointer hover:border-sky-500/50 transition mb-4">
-              <div className="text-4xl mb-3">📄</div>
-              <p className="text-slate-400 text-sm">
-                {file ? <span className="text-sky-400 font-medium">{file.name}</span> : 'Click to upload your resume PDF'}
-              </p>
-              <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files[0])} />
-            </div>
-            <button type="submit" disabled={loading || !file}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50">
-              {loading ? 'Analyzing Resume...' : '🎯 Predict from My Resume'}
-            </button>
-          </form>
-        )}
-
-        {loading && (
-          <div className="flex flex-col items-center gap-4 py-16">
-            <div className="w-12 h-12 border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm">AI is predicting your interview questions...</p>
-          </div>
-        )}
-
-        {result && !loading && (
-          <div className="space-y-4">
-            {/* Summary + Download */}
-            <div className="bg-slate-900 border border-white/5 rounded-2xl p-5 flex flex-wrap gap-4 items-center">
-              <div className="flex-1 flex flex-wrap gap-4">
-                <div className="min-w-[100px]">
-                  <p className="text-xs text-slate-500 mb-1">Total Questions</p>
-                  <p className="text-2xl font-bold text-white">{result.questions?.length || 0}</p>
-                </div>
-                <div className="min-w-[120px]">
-                  <p className="text-xs text-slate-500 mb-1">Target Role</p>
-                  <p className="text-sm font-semibold text-sky-400">{result.role || form.role}</p>
-                </div>
-                <div className="min-w-[140px]">
-                  <p className="text-xs text-slate-500 mb-1">Difficulty Mix</p>
-                  <div className="flex gap-1 flex-wrap mt-1">
-                    {['Easy', 'Medium', 'Hard'].map(d => {
-                      const count = result.questions?.filter(q => q.difficulty === d).length || 0;
-                      return count > 0 ? (
-                        <span key={d} className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColors[d]}`}>{count} {d}</span>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              </div>
-              <button onClick={() => downloadInterviewPDF(result, form)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white text-sm font-medium hover:opacity-90 transition whitespace-nowrap">
-                ⬇ Download PDF
-              </button>
-            </div>
-
-            {result.tip && (
-              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-5 py-3">
-                <p className="text-sm text-amber-300">💡 {result.tip}</p>
-              </div>
-            )}
-
-            <h2 className="text-lg font-semibold text-white pt-2">Predicted Questions</h2>
-
-            {result.questions?.map((q, i) => (
-              <div key={i} className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden">
-                <button onClick={() => toggleExpand(i)} className="w-full text-left px-5 py-4 flex items-start gap-3">
-                  <span className="text-lg mt-0.5">{categoryIcons[q.category] || categoryIcons.Default}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs text-slate-500">{q.category}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColors[q.difficulty] || 'text-slate-400 bg-slate-800 border-white/10'}`}>{q.difficulty}</span>
-                    </div>
-                    <p className="text-sm text-white font-medium leading-relaxed">{q.question}</p>
-                  </div>
-                  <span className={`text-slate-500 text-xs mt-1 transition-transform ${expanded[i] ? 'rotate-180' : ''}`}>▼</span>
-                </button>
-
-                {expanded[i] && (
-                  <div className="px-5 pb-5 pt-0 border-t border-white/5">
-                    <p className="text-xs text-slate-500 mb-2 mt-3">💬 Suggested Answer Approach</p>
-                    <p className="text-sm text-slate-300 leading-relaxed">{q.hint}</p>
-                    {q.keywords?.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {q.keywords.map((k, j) => (
-                          <span key={j} className="text-xs bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2.5 py-1 rounded-full">{k}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            <button onClick={() => downloadInterviewPDF(result, form)}
-              className="w-full py-3 rounded-xl border border-sky-500/30 text-sky-400 text-sm font-medium hover:bg-sky-500/10 transition flex items-center justify-center gap-2">
-              ⬇ Download All Questions as PDF
-            </button>
-          </div>
-        )}
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
+          <Target size={28} className="text-sky-400" /> Interview Predictor
+        </h1>
+        <p className="text-slate-400">AI-predicted questions tailored to your profile and target role</p>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 p-1 bg-slate-900 rounded-xl w-fit border border-white/5">
+        {[
+          { id: 'form', label: 'Fill Form', Icon: ClipboardList },
+          { id: 'resume', label: 'Upload Resume', Icon: FileText },
+        ].map(({ id, label, Icon }) => (
+          <button key={id} onClick={() => { setTab(id); setResult(null); }}
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${tab === id ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}>
+            <Icon size={15} /> {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Form Tab */}
+      {tab === 'form' && (
+        <form onSubmit={handleFormSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 space-y-4 mb-6 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1.5 flex items-center gap-1.5">
+                <Briefcase size={13} /> Target Role *
+              </label>
+              <input type="text" placeholder="e.g. Frontend Developer" value={form.role}
+                onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1.5 flex items-center gap-1.5">
+                <TrendingUp size={13} /> Experience Level
+              </label>
+              <select value={form.level} onChange={e => setForm(p => ({ ...p, level: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500">
+                {['Fresher', 'Junior', 'Mid-level', 'Senior'].map(o => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1.5 flex items-center gap-1.5">
+                <Zap size={13} /> Your Skills *
+              </label>
+              <input type="text" placeholder="e.g. React, Node.js, MongoDB" value={form.skills}
+                onChange={e => setForm(p => ({ ...p, skills: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1.5 flex items-center gap-1.5">
+                <Star size={13} /> Target Company (optional)
+              </label>
+              <input type="text" placeholder="e.g. Google, TCS, Infosys" value={form.company}
+                onChange={e => setForm(p => ({ ...p, company: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
+            </div>
+          </div>
+          <button type="submit" disabled={loading}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
+            <Target size={16} /> {loading ? 'Predicting Questions...' : 'Predict Interview Questions'}
+          </button>
+        </form>
+      )}
+
+      {/* Resume Tab */}
+      {tab === 'resume' && (
+        <form onSubmit={handleResumeSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 mb-6 w-full">
+          <div onClick={() => fileRef.current.click()}
+            className="border-2 border-dashed border-white/10 rounded-xl p-10 text-center cursor-pointer hover:border-sky-500/50 transition mb-4">
+            <Upload size={36} className="text-slate-500 mx-auto mb-3" />
+            <p className="text-slate-400 text-sm">
+              {file
+                ? <span className="text-sky-400 font-medium flex items-center justify-center gap-1.5"><CheckCircle2 size={14} />{file.name}</span>
+                : 'Click to upload your resume PDF'}
+            </p>
+            <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files[0])} />
+          </div>
+          <button type="submit" disabled={loading || !file}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
+            <Target size={16} /> {loading ? 'Analyzing Resume...' : 'Predict from My Resume'}
+          </button>
+        </form>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex flex-col items-center gap-4 py-16">
+          <div className="w-12 h-12 border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">AI is predicting your interview questions...</p>
+        </div>
+      )}
+
+      {/* Results */}
+      {result && !loading && (
+        <div className="space-y-4 w-full">
+
+          {/* Summary bar */}
+          <div className="bg-slate-900 border border-white/5 rounded-2xl p-5 flex flex-wrap gap-4 items-center w-full">
+            <div className="flex-1 flex flex-wrap gap-6">
+              <div className="min-w-[100px]">
+                <p className="text-xs text-slate-500 mb-1 flex items-center gap-1"><Layers size={11} /> Total Questions</p>
+                <p className="text-2xl font-bold text-white">{result.questions?.length || 0}</p>
+              </div>
+              <div className="min-w-[120px]">
+                <p className="text-xs text-slate-500 mb-1 flex items-center gap-1"><Briefcase size={11} /> Target Role</p>
+                <p className="text-sm font-semibold text-sky-400">{result.role || form.role}</p>
+              </div>
+              <div className="min-w-[140px]">
+                <p className="text-xs text-slate-500 mb-1 flex items-center gap-1"><BookOpen size={11} /> Difficulty Mix</p>
+                <div className="flex gap-1 flex-wrap mt-1">
+                  {['Easy', 'Medium', 'Hard'].map(d => {
+                    const count = result.questions?.filter(q => q.difficulty === d).length || 0;
+                    return count > 0 ? (
+                      <span key={d} className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColors[d]}`}>{count} {d}</span>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            </div>
+            <button onClick={() => downloadInterviewPDF(result, form)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white text-sm font-medium hover:opacity-90 transition whitespace-nowrap">
+              <Download size={15} /> Download PDF
+            </button>
+          </div>
+
+          {/* Tip */}
+          {result.tip && (
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-5 py-3 flex items-start gap-2">
+              <Lightbulb size={15} className="text-amber-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-amber-300">{result.tip}</p>
+            </div>
+          )}
+
+          <h2 className="text-lg font-semibold text-white pt-2 flex items-center gap-2">
+            <ClipboardList size={18} className="text-sky-400" /> Predicted Questions
+          </h2>
+
+          {result.questions?.map((q, i) => (
+            <div key={i} className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden w-full">
+              <button onClick={() => toggleExpand(i)} className="w-full text-left px-5 py-4 flex items-start gap-3">
+                <div className="mt-0.5 flex-shrink-0">
+                  <CategoryIcon category={q.category} size={18} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-xs text-slate-500">{q.category}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColors[q.difficulty] || 'text-slate-400 bg-slate-800 border-white/10'}`}>{q.difficulty}</span>
+                  </div>
+                  <p className="text-sm text-white font-medium leading-relaxed">{q.question}</p>
+                </div>
+                <ChevronDown size={16} className={`text-slate-500 mt-1 transition-transform flex-shrink-0 ${expanded[i] ? 'rotate-180' : ''}`} />
+              </button>
+
+              {expanded[i] && (
+                <div className="px-5 pb-5 pt-0 border-t border-white/5">
+                  <p className="text-xs text-slate-500 mb-2 mt-3 flex items-center gap-1.5">
+                    <Brain size={12} /> Suggested Answer Approach
+                  </p>
+                  <p className="text-sm text-slate-300 leading-relaxed">{q.hint}</p>
+                  {q.keywords?.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {q.keywords.map((k, j) => (
+                        <span key={j} className="text-xs bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2.5 py-1 rounded-full">{k}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+
+          <button onClick={() => downloadInterviewPDF(result, form)}
+            className="w-full py-3 rounded-xl border border-sky-500/30 text-sky-400 text-sm font-medium hover:bg-sky-500/10 transition flex items-center justify-center gap-2">
+            <Download size={15} /> Download All Questions as PDF
+          </button>
+        </div>
+      )}
     </div>
   );
 }

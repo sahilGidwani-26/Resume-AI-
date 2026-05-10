@@ -3,23 +3,31 @@ import { Link } from 'react-router-dom';
 import { jobAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import {
+  Code2, BarChart2, Palette, Wrench, Smartphone, Bot, Cloud, ShieldCheck,
+  Database, Globe, Cpu, Terminal, Layers, Zap, Briefcase, Upload,
+  TrendingUp, DollarSign, Building2, Star, ChevronRight, Filter, RefreshCw
+} from 'lucide-react';
+
+const JOB_ICONS = [Code2, BarChart2, Palette, Wrench, Smartphone, Bot, Cloud, ShieldCheck, Database, Globe, Cpu, Terminal, Layers, Zap];
 
 const JobCard = ({ job, index }) => {
-  const icons = ['💻', '📊', '🎨', '🔧', '📱', '🤖', '☁️', '🛡️'];
+  const Icon = JOB_ICONS[index % JOB_ICONS.length];
   return (
-    <div className="card hover:glass-light transition-all duration-200 group">
-      <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500/20 to-violet-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-          {icons[index % icons.length]}
+    <div className="card hover:glass-light transition-all duration-200 group w-full">
+      <div className="flex items-start gap-4 w-full">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500/20 to-violet-500/20 flex items-center justify-center flex-shrink-0">
+          <Icon size={22} className="text-sky-400" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-2">
             <h3 className="text-white font-semibold group-hover:text-sky-400 transition-colors">{job.title}</h3>
-            <span className={`stat-badge flex-shrink-0 ${
+            <span className={`stat-badge flex-shrink-0 flex items-center gap-1 ${
               job.matchScore >= 80 ? 'bg-green-500/15 text-green-400' :
               job.matchScore >= 60 ? 'bg-yellow-500/15 text-yellow-400' :
               'bg-slate-700/50 text-slate-400'
             }`}>
+              <Star size={11} />
               {job.matchScore}% match
             </span>
           </div>
@@ -29,12 +37,20 @@ const JobCard = ({ job, index }) => {
               <span key={s} className="px-2 py-0.5 bg-white/5 text-slate-400 text-xs rounded border border-white/10">{s}</span>
             ))}
           </div>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-sky-400 font-medium">💰 {job.salaryRange}</span>
-            {job.growth && <span className="text-green-400 text-xs">{job.growth}</span>}
+          <div className="flex items-center gap-4 text-sm flex-wrap">
+            <span className="text-sky-400 font-medium flex items-center gap-1">
+              <DollarSign size={13} />{job.salaryRange}
+            </span>
+            {job.growth && (
+              <span className="text-green-400 text-xs flex items-center gap-1">
+                <TrendingUp size={12} />{job.growth}
+              </span>
+            )}
           </div>
           {job.companies?.length > 0 && (
-            <p className="text-slate-600 text-xs mt-2">Hiring: {job.companies.join(', ')}</p>
+            <p className="text-slate-600 text-xs mt-2 flex items-center gap-1">
+              <Building2 size={11} /> Hiring: {job.companies.join(', ')}
+            </p>
           )}
         </div>
       </div>
@@ -85,34 +101,41 @@ export default function JobRecommendationsPage() {
   );
 
   if (jobs.length === 0) return (
-    <div className="max-w-2xl mx-auto px-6 py-20 text-center">
-      <div className="card">
-        <div className="text-6xl mb-4">💼</div>
+    <div className="w-full px-6 py-20 text-center">
+      <div className="card max-w-2xl mx-auto">
+        <Briefcase size={56} className="text-slate-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-white mb-3">No Job Matches Yet</h2>
         <p className="text-slate-400 mb-6">Upload your resume first to get personalized job recommendations based on your skills.</p>
-        <Link to="/upload" className="btn-primary inline-block">Upload Resume →</Link>
+        <Link to="/upload" className="btn-primary inline-flex items-center gap-2">
+          <Upload size={16} /> Upload Resume <ChevronRight size={16} />
+        </Link>
       </div>
     </div>
   );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <div className="w-full px-4 sm:px-6 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">
           Job <span className="gradient-text">Recommendations</span>
         </h1>
         {basedOn && (
-          <p className="text-slate-400 text-sm">
-            Based on: <span className="text-sky-400">{basedOn}</span> · {jobs.length} matches found
+          <p className="text-slate-400 text-sm flex items-center gap-2">
+            <Briefcase size={13} className="text-sky-400" />
+            Based on: <span className="text-sky-400">{basedOn}</span>
+            <span className="text-slate-600">·</span>
+            {jobs.length} matches found
           </p>
         )}
       </div>
 
       {/* Skills */}
       {skills.length > 0 && (
-        <div className="card mb-6">
-          <p className="text-sm text-slate-500 mb-3">Your skills used for matching:</p>
+        <div className="card mb-6 w-full">
+          <p className="text-sm text-slate-500 mb-3 flex items-center gap-2">
+            <Code2 size={14} /> Your skills used for matching:
+          </p>
           <div className="flex flex-wrap gap-2">
             {skills.slice(0, 15).map(s => (
               <span key={s} className="px-2.5 py-1 bg-sky-500/10 text-sky-400 text-xs rounded-lg border border-sky-500/20">{s}</span>
@@ -123,6 +146,7 @@ export default function JobRecommendationsPage() {
 
       {/* Filters */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <Filter size={16} className="text-slate-500 self-center flex-shrink-0" />
         {[
           { id: 'all', label: `All (${jobs.length})` },
           { id: 'high', label: `High Match (${jobs.filter(j => j.matchScore >= 80).length})` },
@@ -141,8 +165,8 @@ export default function JobRecommendationsPage() {
         ))}
       </div>
 
-      {/* Job Cards */}
-      <div className="space-y-4 stagger">
+      {/* Job Cards — full width */}
+      <div className="space-y-4 stagger w-full">
         {filteredJobs.map((job, i) => (
           <JobCard key={i} job={job} index={i} />
         ))}
@@ -155,9 +179,13 @@ export default function JobRecommendationsPage() {
       )}
 
       {/* Refresh CTA */}
-      <div className="mt-10 card text-center border border-sky-500/20">
-        <p className="text-slate-400 mb-4">Want fresher matches? Upload your updated resume!</p>
-        <Link to="/upload" className="btn-primary inline-block">Upload New Resume →</Link>
+      <div className="mt-10 card text-center border border-sky-500/20 w-full">
+        <p className="text-slate-400 mb-4 flex items-center justify-center gap-2">
+          <RefreshCw size={15} /> Want fresher matches? Upload your updated resume!
+        </p>
+        <Link to="/upload" className="btn-primary inline-flex items-center gap-2">
+          <Upload size={16} /> Upload New Resume <ChevronRight size={16} />
+        </Link>
       </div>
     </div>
   );

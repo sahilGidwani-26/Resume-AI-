@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Upload, Briefcase, FileText,
   Map, Target, Mic, LogOut, ChevronLeft, ChevronRight,
-  StickyNote, Menu, Globe,
+  StickyNote, Menu, Globe, MessageCircle,
 } from 'lucide-react';
 
 const navLinks = [
@@ -16,6 +16,7 @@ const navLinks = [
   { label: 'Interview Prep', path: '/interview',       icon: Target },
   { label: 'Mock Interview', path: '/mock-interview',  icon: Mic },
    { label: 'Portfolio',      path: '/portfolio',       icon: Globe },
+   {label: 'chat', path: '/chat', icon: MessageCircle },
 ];
 
 function NavItem({ label, path, icon: Icon, collapsed }) {

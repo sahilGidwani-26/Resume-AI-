@@ -3,11 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { resumeAPI } from '../utils/api';
 import toast from 'react-hot-toast';
+import {
+  Upload, Zap, CheckCircle2, FileText, X, ArrowRight,
+  Lightbulb, CloudUpload, Target, Bot, FileCheck2
+} from 'lucide-react';
 
 const steps = [
-  { id: 1, label: 'Upload PDF', icon: '↑' },
-  { id: 2, label: 'AI Processing', icon: '⚡' },
-  { id: 3, label: 'View Results', icon: '✓' },
+  { id: 1, label: 'Upload PDF', Icon: Upload },
+  { id: 2, label: 'AI Processing', Icon: Zap },
+  { id: 3, label: 'View Results', Icon: CheckCircle2 },
+];
+
+const tips = [
+  'Use a text-based PDF (not scanned image)',
+  'Include your skills, experience, and education clearly',
+  'Use standard section headings (Experience, Education, Skills)',
+  'Keep your resume to 1-2 pages for best ATS performance',
 ];
 
 export default function ResumeUploadPage() {
@@ -22,9 +33,7 @@ export default function ResumeUploadPage() {
       toast.error('Only PDF files up to 5MB are accepted');
       return;
     }
-    if (acceptedFiles.length > 0) {
-      setFile(acceptedFiles[0]);
-    }
+    if (acceptedFiles.length > 0) setFile(acceptedFiles[0]);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -39,9 +48,8 @@ export default function ResumeUploadPage() {
     setUploading(true);
     setCurrentStep(2);
 
-    // Simulate progress
     const interval = setInterval(() => {
-      setProgress((p) => {
+      setProgress(p => {
         if (p >= 90) { clearInterval(interval); return 90; }
         return p + Math.random() * 15;
       });
@@ -54,7 +62,7 @@ export default function ResumeUploadPage() {
       clearInterval(interval);
       setProgress(100);
       setCurrentStep(3);
-      toast.success('Resume analyzed successfully! 🎯');
+      toast.success('Resume analyzed successfully!');
       setTimeout(() => navigate(`/analysis/${data.resume._id}`), 800);
     } catch (err) {
       clearInterval(interval);
@@ -65,13 +73,11 @@ export default function ResumeUploadPage() {
     }
   };
 
-  const removeFile = () => {
-    setFile(null);
-    setProgress(0);
-  };
+  const removeFile = () => { setFile(null); setProgress(0); };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+    <div className="w-full px-4 sm:px-6 py-8">
+
       {/* Header */}
       <div className="text-center mb-10">
         <h1 className="text-4xl font-bold text-white mb-3">
@@ -82,20 +88,23 @@ export default function ResumeUploadPage() {
 
       {/* Steps */}
       <div className="flex items-center justify-center gap-4 mb-10">
-        {steps.map((step, i) => (
-          <div key={step.id} className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 ${currentStep >= step.id ? 'text-sky-400' : 'text-slate-600'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                currentStep > step.id ? 'bg-sky-500 text-white' :
-                currentStep === step.id ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40' :
+        {steps.map(({ id, label, Icon }, i) => (
+          <div key={id} className="flex items-center gap-4">
+            <div className={`flex items-center gap-2 ${currentStep >= id ? 'text-sky-400' : 'text-slate-600'}`}>
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                currentStep > id ? 'bg-sky-500 text-white' :
+                currentStep === id ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40' :
                 'bg-slate-800 text-slate-600'
               }`}>
-                {currentStep > step.id ? '✓' : step.icon}
+                {currentStep > id
+                  ? <CheckCircle2 size={16} />
+                  : <Icon size={16} />
+                }
               </div>
-              <span className="text-sm font-medium hidden sm:block">{step.label}</span>
+              <span className="text-sm font-medium hidden sm:block">{label}</span>
             </div>
             {i < steps.length - 1 && (
-              <div className={`w-12 h-px transition-all ${currentStep > step.id ? 'bg-sky-500' : 'bg-slate-700'}`} />
+              <div className={`w-12 h-px transition-all ${currentStep > id ? 'bg-sky-500' : 'bg-slate-700'}`} />
             )}
           </div>
         ))}
@@ -103,7 +112,9 @@ export default function ResumeUploadPage() {
 
       {/* Upload Zone */}
       {!uploading ? (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
+
+          {/* Dropzone */}
           <div
             {...getRootProps()}
             className={`relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${
@@ -115,67 +126,73 @@ export default function ResumeUploadPage() {
             }`}
           >
             <input {...getInputProps()} />
-            
+
             {file ? (
               <div className="animate-fade-in">
-                <div className="text-5xl mb-4">📄</div>
+                <FileCheck2 size={48} className="text-green-400 mx-auto mb-4" />
                 <p className="text-white font-semibold text-lg mb-1">{file.name}</p>
                 <p className="text-slate-500 text-sm mb-4">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); removeFile(); }}
-                  className="text-red-400 hover:text-red-300 text-sm border border-red-500/30 px-3 py-1 rounded-lg hover:bg-red-500/10 transition-all"
+                  onClick={e => { e.stopPropagation(); removeFile(); }}
+                  className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-300 text-sm border border-red-500/30 px-3 py-1 rounded-lg hover:bg-red-500/10 transition-all"
                 >
-                  Remove file
+                  <X size={13} /> Remove file
                 </button>
               </div>
             ) : (
               <>
-                <div className="text-6xl mb-4">{isDragActive ? '🎯' : '☁️'}</div>
+                {isDragActive
+                  ? <Target size={52} className="text-sky-400 mx-auto mb-4" />
+                  : <CloudUpload size={52} className="text-slate-500 mx-auto mb-4" />
+                }
                 <p className="text-xl font-semibold text-white mb-2">
                   {isDragActive ? 'Drop it here!' : 'Drag & drop your resume'}
                 </p>
                 <p className="text-slate-500 mb-4">or click to browse files</p>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-slate-400 text-sm border border-white/10">
-                  <span>📋</span> PDF only · Max 5MB
+                  <FileText size={14} /> PDF only · Max 5MB
                 </div>
               </>
             )}
           </div>
 
           {/* Tips */}
-          <div className="card border border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-400 mb-3">💡 For Best Results</h3>
+          <div className="card border border-slate-800 w-full">
+            <h3 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+              <Lightbulb size={14} className="text-yellow-400" /> For Best Results
+            </h3>
             <ul className="space-y-2 text-sm text-slate-500">
-              {[
-                'Use a text-based PDF (not scanned image)',
-                'Include your skills, experience, and education clearly',
-                'Use standard section headings (Experience, Education, Skills)',
-                'Keep your resume to 1-2 pages for best ATS performance',
-              ].map((tip, i) => (
+              {tips.map((tip, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="text-sky-500 mt-0.5">→</span> {tip}
+                  <ArrowRight size={13} className="text-sky-500 mt-0.5 shrink-0" /> {tip}
                 </li>
               ))}
             </ul>
           </div>
 
+          {/* Submit */}
           <button
             onClick={handleUpload}
             disabled={!file}
-            className="btn-primary w-full py-4 text-base disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-primary w-full py-4 text-base disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {file ? '⚡ Analyze with AI →' : 'Select a PDF to continue'}
+            {file
+              ? <><Zap size={17} /> Analyze with AI <ArrowRight size={16} /></>
+              : <><Upload size={16} /> Select a PDF to continue</>
+            }
           </button>
         </div>
       ) : (
         /* Loading State */
-        <div className="card text-center py-16">
+        <div className="card text-center py-16 w-full">
           <div className="relative w-24 h-24 mx-auto mb-6">
             <div className="w-24 h-24 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center text-2xl">🤖</div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Bot size={28} className="text-sky-400" />
+            </div>
           </div>
-          
+
           <h2 className="text-2xl font-bold text-white mb-2">AI is Analyzing...</h2>
           <p className="text-slate-400 mb-8">
             {progress < 30 ? 'Extracting text from PDF...' :
