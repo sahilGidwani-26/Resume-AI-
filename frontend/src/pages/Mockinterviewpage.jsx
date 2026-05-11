@@ -296,7 +296,7 @@ export default function MockInterviewPage() {
   const [currentFeedback, setCurrentFeedback] = useState(null);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [autoEvalCountdown, setAutoEvalCountdown] = useState(null);
+  const [, setAutoEvalCountdown] = useState(null);
 
   const fileRef = useRef();
   const recognitionRef = useRef(null);
@@ -365,30 +365,30 @@ export default function MockInterviewPage() {
   };
 
   // ── Schedule auto-eval — reads from ref, not closure ─────────────────────────
-  const scheduleAutoEval = useCallback(() => {
-    clearTimeout(autoEvalRef.current);
-    clearInterval(autoEvalCountdownRef.current);
-    if (!latestTranscriptRef.current.trim()) return;
+  // const scheduleAutoEval = useCallback(() => {
+  //   clearTimeout(autoEvalRef.current);
+  //   clearInterval(autoEvalCountdownRef.current);
+  //   if (!latestTranscriptRef.current.trim()) return;
 
-    let countdown = 6;
-    setAutoEvalCountdown(countdown);
-    autoEvalCountdownRef.current = setInterval(() => {
-      countdown -= 1;
-      setAutoEvalCountdown(prev => {
-        if (prev === null) return null;
-        return countdown;
-      });
-      if (countdown <= 0) {
-        clearInterval(autoEvalCountdownRef.current);
-        setAutoEvalCountdown(null);
-      }
-    }, 1000);
+  //   let countdown = 6;
+  //   setAutoEvalCountdown(countdown);
+  //   autoEvalCountdownRef.current = setInterval(() => {
+  //     countdown -= 1;
+  //     setAutoEvalCountdown(prev => {
+  //       if (prev === null) return null;
+  //       return countdown;
+  //     });
+  //     if (countdown <= 0) {
+  //       clearInterval(autoEvalCountdownRef.current);
+  //       setAutoEvalCountdown(null);
+  //     }
+  //   }, 1000);
 
-    autoEvalRef.current = setTimeout(() => {
-      setAutoEvalCountdown(null);
-      submitWithLatestTranscript(); // reads ref — always fresh ✓
-    }, 6000);
-  }, [submitWithLatestTranscript]);
+  //   autoEvalRef.current = setTimeout(() => {
+  //     setAutoEvalCountdown(null);
+  //     submitWithLatestTranscript(); // reads ref — always fresh ✓
+  //   }, 6000);
+  // }, [submitWithLatestTranscript]);
 
   // Stop recognition without cancelling auto-eval (used internally)
   const stopListeningOnly = () => {

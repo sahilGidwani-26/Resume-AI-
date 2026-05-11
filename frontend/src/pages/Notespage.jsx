@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import API from '../utils/api';
 import {
   StickyNote, CheckSquare, CalendarDays, Plus, Trash2,
-  Clock, Flag, Calendar, CheckCheck, Circle,
+  Clock,  Calendar, CheckCheck, Circle,
   AlarmClock, X, Pencil, Pin, RefreshCcw,
   BookOpen, Briefcase, Dumbbell, User, Folder, MoreHorizontal,
   Search,

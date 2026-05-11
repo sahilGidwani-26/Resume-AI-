@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { jobAPI } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import {
   Code2, BarChart2, Palette, Wrench, Smartphone, Bot, Cloud, ShieldCheck,
@@ -59,7 +59,7 @@ const JobCard = ({ job, index }) => {
 };
 
 export default function JobRecommendationsPage() {
-  const { user } = useAuth();
+
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [basedOn, setBasedOn] = useState('');
