@@ -12,7 +12,7 @@ const {
   updateStatus,
   getStats,
   bulkDelete,
-} = require('../controllers/noteController');
+} = require('../controllers/note.controller');
 
 router.use(protect);
 
