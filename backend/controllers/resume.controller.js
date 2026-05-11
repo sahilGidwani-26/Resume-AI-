@@ -1,6 +1,7 @@
 const pdfParse = require('pdf-parse');
 const Resume = require('../models/Resume.model');
 const User = require('../models/User.model');
+const InterviewSession = require('../models/InterviewSession.model');
 const {
   analyzeResume,
   generateRoadmapFromForm,
@@ -143,19 +144,25 @@ const interviewFromResume = async (req, res) => {
   }
 };
 
+// ─── FIXED: now reads and validates questionCount ──────────────────────────
 // @desc  Mock interview questions from form
 // @route POST /api/resume/mock-interview
 const mockInterviewFromForm = async (req, res) => {
   try {
-    const { role, level, skills, company } = req.body;
+    const { role, level, skills, company, questionCount } = req.body;
     if (!role || !skills) return res.status(400).json({ success: false, message: 'role and skills required' });
-    const data = await generateMockInterviewQuestions({ role, level, skills, company });
+
+    // clamp between 5 and 15, default 5
+    const count = Math.min(Math.max(parseInt(questionCount) || 5, 5), 15);
+
+    const data = await generateMockInterviewQuestions({ role, level, skills, company, questionCount: count });
     res.json({ success: true, questions: data.questions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
+// ─── FIXED: now reads and validates questionCount ──────────────────────────
 // @desc  Mock interview questions from resume
 // @route POST /api/resume/mock-interview-resume
 const mockInterviewFromResume = async (req, res) => {
@@ -164,7 +171,10 @@ const mockInterviewFromResume = async (req, res) => {
     const pdfData = await pdfParse(req.file.buffer);
     const rawText = pdfData.text;
     if (!rawText || rawText.trim().length < 50) return res.status(400).json({ success: false, message: 'Could not extract text.' });
-    const data = await generateMockInterviewFromResume(rawText);
+
+    const count = Math.min(Math.max(parseInt(req.body.questionCount) || 5, 5), 15);
+
+    const data = await generateMockInterviewFromResume(rawText, count);
     res.json({ success: true, questions: data.questions, role: data.role });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -197,10 +207,95 @@ const finalInterviewReport = async (req, res) => {
   }
 };
 
+// ─── NEW: Save interview session to DB ────────────────────────────────────────
+// @desc  Save completed interview session
+// @route POST /api/resume/interview-sessions
+const saveInterviewSession = async (req, res) => {
+  try {
+    const { questions, answers, feedbacks, finalReport, role, level } = req.body;
+    if (!questions || !answers) return res.status(400).json({ success: false, message: 'questions and answers required' });
+
+    const validFeedbacks = (feedbacks || []).filter(Boolean);
+    const avgScore = validFeedbacks.length
+      ? Math.round(validFeedbacks.reduce((a, f) => a + (f?.score || 0), 0) / validFeedbacks.length)
+      : 0;
+
+    const session = await InterviewSession.create({
+      user: req.user._id,
+      role: role || 'General',
+      level: level || 'Junior',
+      totalQuestions: questions.length,
+      answered: (answers || []).filter(Boolean).length,
+      avgScore,
+      questions: questions.map((q, i) => ({
+        question: q.question || q,
+        category: q.category || 'General',
+        difficulty: q.difficulty || 'Medium',
+        answer: answers[i] || '',
+        score: feedbacks?.[i]?.score || 0,
+        feedback: feedbacks?.[i] || null,
+      })),
+      finalReport: finalReport || null,
+    });
+
+    res.status(201).json({ success: true, session });
+  } catch (error) {
+    console.error('Save session error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─── NEW: Get all sessions + daily progress ───────────────────────────────────
+// @desc  Get interview history with daily averages
+// @route GET /api/resume/interview-sessions
+const getInterviewSessions = async (req, res) => {
+  try {
+    const sessions = await InterviewSession.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    // Build daily progress map
+    const byDay = {};
+    sessions.forEach(s => {
+      const day = new Date(s.createdAt).toISOString().split('T')[0];
+      if (!byDay[day]) byDay[day] = { scores: [], count: 0 };
+      byDay[day].scores.push(s.avgScore);
+      byDay[day].count++;
+    });
+
+    const dailyProgress = Object.entries(byDay)
+      .map(([date, d]) => ({
+        date,
+        avgScore: Math.round(d.scores.reduce((a, b) => a + b, 0) / d.scores.length),
+        sessions: d.count,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    res.json({ success: true, sessions, dailyProgress });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─── NEW: Get single session detail ──────────────────────────────────────────
+// @desc  Get one interview session
+// @route GET /api/resume/interview-sessions/:id
+const getInterviewSessionById = async (req, res) => {
+  try {
+    const session = await InterviewSession.findOne({ _id: req.params.id, user: req.user._id });
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+    res.json({ success: true, session });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   uploadResume, getResumes, getResumeById, deleteResume,
   roadmapFromForm, roadmapFromResume,
   interviewFromForm, interviewFromResume,
   mockInterviewFromForm, mockInterviewFromResume,
   evaluateSingleAnswer, finalInterviewReport,
+  saveInterviewSession, getInterviewSessions, getInterviewSessionById,
 };

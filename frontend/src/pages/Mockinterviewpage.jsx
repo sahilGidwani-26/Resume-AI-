@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -7,7 +7,8 @@ import {
   Download, CheckCircle2, AlertCircle, Lightbulb, Trophy,
   FileText, ClipboardList, Settings, BarChart3, Star,
   Clock, Target, TrendingUp, Loader2, Play, Square,
-  Upload, BookOpen, Zap, MessageSquare, ArrowRight, CheckCheck
+  Upload, BookOpen, Zap, MessageSquare, ArrowRight, CheckCheck,
+  ArrowLeft, History, X, Hash
 } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -29,7 +30,7 @@ const scoreBar = (s) => {
   return 'bg-red-500';
 };
 
-// ── PDF (unchanged logic) ──────────────────────────────────────────────────
+// ── PDF ──────────────────────────────────────────────────────────────────────
 const downloadReportPDF = (questions, answers, feedbacks, finalReport, setupData) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210, pageH = 297, margin = 18, contentW = 210 - 36;
@@ -37,12 +38,10 @@ const downloadReportPDF = (questions, answers, feedbacks, finalReport, setupData
   const checkPage = (needed = 12) => {
     if (y + needed > pageH - 15) { doc.addPage(); doc.setFillColor(15,23,42); doc.rect(0,0,pageW,pageH,'F'); y = 20; }
   };
-  const avgScore = feedbacks.length ? Math.round(feedbacks.reduce((a,f)=>a+(f?.score||0),0)/feedbacks.length) : 0;
+  const avgScore = feedbacks.filter(Boolean).length
+    ? Math.round(feedbacks.filter(Boolean).reduce((a,f)=>a+(f?.score||0),0)/feedbacks.filter(Boolean).length) : 0;
   doc.setFillColor(15,23,42); doc.rect(0,0,pageW,pageH,'F');
   doc.setFillColor(14,165,233); doc.rect(0,0,pageW,3,'F');
-  doc.setFillColor(14,165,233); doc.roundedRect(margin,28,12,12,2,2,'F');
-  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(255,255,255); doc.text('R',margin+4.2,36.5);
-  doc.setFontSize(13); doc.text('ResumeAI',margin+16,36.5);
   doc.setFontSize(30); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255); doc.text('Mock Interview',margin,100);
   doc.setTextColor(14,165,233); doc.text('Report',margin,115);
   doc.setFontSize(11); doc.setFont('helvetica','normal'); doc.setTextColor(148,163,184);
@@ -52,15 +51,8 @@ const downloadReportPDF = (questions, answers, feedbacks, finalReport, setupData
   const sc=avgScore>=80?[16,185,129]:avgScore>=60?[245,158,11]:[239,68,68];
   doc.setTextColor(...sc); doc.text(`${avgScore}`,cx-(avgScore>=100?9:avgScore>=10?6:4),cy+4);
   doc.setFontSize(8); doc.setTextColor(100,116,139); doc.text('/100',cx-5,cy+12);
-  const stats=[{label:'Questions',val:questions.length},{label:'Answered',val:answers.filter(Boolean).length},{label:'Avg Score',val:`${avgScore}%`}];
-  stats.forEach((s,i)=>{
-    const x=margin+i*60; doc.setFillColor(30,41,59); doc.roundedRect(x,155,55,24,3,3,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(255,255,255); doc.text(`${s.val}`,x+6,167);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,116,139); doc.text(s.label,x+6,174);
-  });
   if(finalReport?.summary){
     doc.setFillColor(30,41,59); doc.roundedRect(margin,190,contentW,45,4,4,'F');
-    doc.setFillColor(14,165,233); doc.roundedRect(margin,190,4,45,2,2,'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(14,165,233); doc.text('OVERALL SUMMARY',margin+10,200);
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(203,213,225);
     const lines=doc.splitTextToSize(finalReport.summary,contentW-18); doc.text(lines.slice(0,5),margin+10,208);
@@ -84,20 +76,19 @@ const downloadReportPDF = (questions, answers, feedbacks, finalReport, setupData
       if(fb.improve){checkPage(20);const iLines=doc.splitTextToSize(fb.improve,contentW-16);const iH=iLines.length*5.5+14;doc.setFillColor(35,25,15);doc.roundedRect(margin,y,contentW,iH,3,3,'F');doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(245,158,11);doc.text('WHAT TO IMPROVE',margin+8,y+8);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(253,230,138);doc.text(iLines,margin+8,y+14);y+=iH+6;}
       if(fb.ideal){checkPage(20);const idLines=doc.splitTextToSize(fb.ideal,contentW-16);const idH=idLines.length*5.5+14;doc.setFillColor(15,23,42);doc.roundedRect(margin,y,contentW,idH,3,3,'F');doc.setFillColor(14,165,233);doc.roundedRect(margin,y,3,idH,1,1,'F');doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(14,165,233);doc.text('IDEAL ANSWER APPROACH',margin+8,y+8);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(186,230,253);doc.text(idLines,margin+8,y+14);y+=idH+6;}
     }
-    doc.setFontSize(8); doc.setTextColor(71,85,105); doc.text(`Q${i+1} / ${questions.length}`,pageW-margin-16,pageH-10);
   });
   if(finalReport){
     doc.addPage(); doc.setFillColor(15,23,42); doc.rect(0,0,pageW,pageH,'F'); doc.setFillColor(139,92,246); doc.rect(0,0,pageW,2,'F');
     y=22; doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(255,255,255); doc.text('Final Assessment',margin,y); y+=14;
-    if(finalReport.strengths?.length){checkPage(15);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(16,185,129);doc.text('STRENGTHS',margin,y);y+=7;finalReport.strengths.forEach(s=>{checkPage(9);const ls=doc.splitTextToSize(`• ${s}`,contentW-6);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(167,243,208);doc.text(ls,margin+4,y);y+=ls.length*5.5+3;});y+=6;}
-    if(finalReport.weaknesses?.length){checkPage(15);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(245,158,11);doc.text('AREAS TO IMPROVE',margin,y);y+=7;finalReport.weaknesses.forEach(w=>{checkPage(9);const lw=doc.splitTextToSize(`• ${w}`,contentW-6);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(253,230,138);doc.text(lw,margin+4,y);y+=lw.length*5.5+3;});y+=6;}
-    if(finalReport.tips?.length){checkPage(15);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(167,139,250);doc.text('PRO TIPS',margin,y);y+=7;finalReport.tips.forEach(t=>{checkPage(9);const lt=doc.splitTextToSize(`• ${t}`,contentW-6);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(221,214,254);doc.text(lt,margin+4,y);y+=lt.length*5.5+3;});}
+    if(finalReport.strengths?.length){doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(16,185,129);doc.text('STRENGTHS',margin,y);y+=7;finalReport.strengths.forEach(s=>{const ls=doc.splitTextToSize(`• ${s}`,contentW-6);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(167,243,208);doc.text(ls,margin+4,y);y+=ls.length*5.5+3;});y+=6;}
+    if(finalReport.weaknesses?.length){doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(245,158,11);doc.text('AREAS TO IMPROVE',margin,y);y+=7;finalReport.weaknesses.forEach(w=>{const lw=doc.splitTextToSize(`• ${w}`,contentW-6);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(253,230,138);doc.text(lw,margin+4,y);y+=lw.length*5.5+3;});y+=6;}
+    if(finalReport.tips?.length){doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(167,139,250);doc.text('PRO TIPS',margin,y);y+=7;finalReport.tips.forEach(t=>{const lt=doc.splitTextToSize(`• ${t}`,contentW-6);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(221,214,254);doc.text(lt,margin+4,y);y+=lt.length*5.5+3;});}
   }
   doc.save(`ResumeAI_MockInterview_${(setupData.role||'Report').replace(/\s+/g,'_')}.pdf`);
   toast.success('Report downloaded!');
 };
 
-// ── SIDEBAR NAV ITEM ──────────────────────────────────────────────────────
+// ── SIDEBAR NAV ITEM ──────────────────────────────────────────────────────────
 const SideNavItem = ({ icon: Icon, label, active, done, onClick }) => (
   <button
     onClick={onClick}
@@ -116,7 +107,7 @@ const SideNavItem = ({ icon: Icon, label, active, done, onClick }) => (
   </button>
 );
 
-// ── STAT CARD ─────────────────────────────────────────────────────────────
+// ── STAT CARD ─────────────────────────────────────────────────────────────────
 const StatCard = ({ icon: Icon, label, value, color = 'sky' }) => {
   const colors = {
     sky: 'text-sky-400 bg-sky-500/10',
@@ -137,11 +128,156 @@ const StatCard = ({ icon: Icon, label, value, color = 'sky' }) => {
   );
 };
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────────────
+// ── BACK CONFIRM MODAL ────────────────────────────────────────────────────────
+const BackConfirmModal = ({ onConfirm, onCancel }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-80 shadow-2xl">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+          <AlertCircle size={20} className="text-red-400" />
+        </div>
+        <div>
+          <p className="text-white font-semibold">Exit Interview?</p>
+          <p className="text-xs text-slate-400">Your progress will be lost</p>
+        </div>
+      </div>
+      <p className="text-sm text-slate-300 mb-5">
+        Are you sure you want to go back? Your current interview session and answers will not be saved.
+      </p>
+      <div className="flex gap-3">
+        <button onClick={onCancel}
+          className="flex-1 py-2 rounded-xl border border-white/10 text-slate-300 text-sm font-medium hover:bg-white/5 transition">
+          Keep Going
+        </button>
+        <button onClick={onConfirm}
+          className="flex-1 py-2 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/30 transition">
+          Exit
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// ── HISTORY PANEL (now loads from DB) ─────────────────────────────────────────
+const HistoryPanel = ({ onClose, token }) => {
+  const [history, setHistory] = useState([]);
+  const [dailyProgress, setDailyProgress] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await axios.get(`${API}/resume/interview-sessions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setHistory(res.data.sessions || []);
+        setDailyProgress(res.data.dailyProgress || []);
+      } catch {
+        toast.error('Could not load history');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [token]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative ml-auto w-[440px] h-full bg-slate-900 border-l border-white/10 flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <History size={16} className="text-sky-400" />
+            <h3 className="text-white font-semibold text-sm">Interview History</h3>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Daily Progress Chart */}
+        {dailyProgress.length > 1 && (
+          <div className="px-4 pt-4 pb-2 border-b border-white/5">
+            <p className="text-xs font-semibold text-slate-400 mb-3 flex items-center gap-1.5">
+              <TrendingUp size={12} className="text-sky-400" /> Daily Average Score
+            </p>
+            <div className="flex items-end gap-1.5 h-16">
+              {dailyProgress.slice(-14).map((d) => (
+                <div key={d.date} className="flex-1 flex flex-col items-center gap-1 group relative">
+                  <div
+                    className={`w-full rounded-sm transition-all ${scoreBar(d.avgScore)}`}
+                    style={{ height: `${Math.max((d.avgScore / 100) * 52, 4)}px` }}
+                  />
+                  <span className="text-[9px] text-slate-600 group-hover:text-slate-400 transition">
+                    {d.date.slice(5)}
+                  </span>
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-slate-800 border border-white/10 rounded px-2 py-1 text-[10px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition z-10">
+                    {d.avgScore}/100 · {d.sessions} session{d.sessions > 1 ? 's' : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-slate-500 gap-2">
+              <Loader2 size={16} className="animate-spin" /> Loading history...
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              <History size={32} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No history yet</p>
+              <p className="text-xs mt-1">Complete an interview to see it here</p>
+            </div>
+          ) : history.map((entry) => (
+            <div key={entry._id} className="bg-slate-800 border border-white/5 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white font-medium text-sm">{entry.role}</span>
+                <span className={`text-sm font-bold ${scoreColor(entry.avgScore)}`}>{entry.avgScore}/100</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-slate-400 mb-3">
+                <span>{entry.level}</span>
+                <span>•</span>
+                <span>{entry.answered}/{entry.totalQuestions} answered</span>
+                <span>•</span>
+                <span>{new Date(entry.createdAt).toLocaleDateString('en-IN')}</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div className={`h-1.5 rounded-full ${scoreBar(entry.avgScore)}`}
+                  style={{ width: `${entry.avgScore}%` }} />
+              </div>
+              {entry.questions?.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  {entry.questions.slice(0, 3).map((q, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 w-4">Q{i+1}</span>
+                      <div className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
+                        <div className={`h-1 rounded-full ${scoreBar(q.score)}`} style={{ width: `${q.score}%` }} />
+                      </div>
+                      <span className={`text-xs ${scoreColor(q.score)}`}>{q.score}</span>
+                    </div>
+                  ))}
+                  {entry.questions.length > 3 && (
+                    <p className="text-xs text-slate-600">+{entry.questions.length - 3} more questions</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function MockInterviewPage() {
   const [stage, setStage] = useState(STAGES.SETUP);
   const [setupTab, setSetupTab] = useState('form');
-  const [form, setForm] = useState({ role: '', level: 'Junior', skills: '', company: '' });
+  const [form, setForm] = useState({ role: '', level: 'Junior', skills: '', company: '', questionCount: 5 });
   const [file, setFile] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
@@ -158,29 +294,48 @@ export default function MockInterviewPage() {
   const [timeLeft, setTimeLeft] = useState(120);
   const [timerActive, setTimerActive] = useState(false);
   const [currentFeedback, setCurrentFeedback] = useState(null);
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [autoEvalCountdown, setAutoEvalCountdown] = useState(null);
 
   const fileRef = useRef();
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
   const timerRef = useRef(null);
+  const autoEvalRef = useRef(null);
+  const autoEvalCountdownRef = useRef(null);
+  // ── KEY FIX: store latest transcript in a ref so setTimeout closure always reads fresh value
+  const latestTranscriptRef = useRef('');
+
   const token = localStorage.getItem('token');
 
+  // ── Timer ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (timerActive && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
     } else if (timeLeft === 0 && timerActive) {
       stopListening();
       toast('Time up! Submitting your answer.', { icon: '⏰' });
-      handleSubmitAnswer();
+      submitWithLatestTranscript();
     }
     return () => clearTimeout(timerRef.current);
   }, [timerActive, timeLeft]);
 
+  // ── Speak question on enter interview ────────────────────────────────────────
   useEffect(() => {
     if (stage === STAGES.INTERVIEWING && questions[currentQ]) {
       setTimeout(() => speakText(questions[currentQ].question), 600);
     }
   }, [stage, currentQ]);
+
+  // ── Clear timers on unmount ───────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      clearTimeout(autoEvalRef.current);
+      clearInterval(autoEvalCountdownRef.current);
+      clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const speakText = (text) => {
     if (!synthRef.current) return;
@@ -188,115 +343,273 @@ export default function MockInterviewPage() {
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'en-US'; utt.rate = 0.92; utt.pitch = 1;
     utt.onstart = () => setIsSpeaking(true);
-    utt.onend = () => { setIsSpeaking(false); if (answerMode === 'voice') startListening(); };
+    utt.onend = () => {
+      setIsSpeaking(false);
+      if (answerMode === 'voice') startListening();
+    };
     synthRef.current.speak(utt);
   };
 
-  const startListening = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return toast.error('Speech recognition not supported. Use Chrome.');
-    const rec = new SR();
-    rec.lang = 'en-US'; rec.continuous = true; rec.interimResults = true;
-    rec.onstart = () => { setIsListening(true); setTimerActive(true); setTimeLeft(120); };
-    rec.onresult = (e) => {
-      let final = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript;
-      }
-      setTranscript(prev => prev + final);
-    };
-    rec.onerror = (e) => { if (e.error !== 'no-speech') toast.error('Mic error: ' + e.error); setIsListening(false); setTimerActive(false); };
-    rec.onend = () => { setIsListening(false); setTimerActive(false); };
-    recognitionRef.current = rec;
-    rec.start();
+  // ── Submit using ref value (always fresh, no closure bug) ────────────────────
+  const submitWithLatestTranscript = useCallback(() => {
+    const answer = latestTranscriptRef.current;
+    if (!answer.trim()) return;
+    stopListeningOnly();
+    handleSubmitAnswerWithTranscript(answer);
+  }, []);
+
+  const cancelAutoEval = () => {
+    clearTimeout(autoEvalRef.current);
+    clearInterval(autoEvalCountdownRef.current);
+    setAutoEvalCountdown(null);
   };
 
-  const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); setTimerActive(false); };
+  // ── Schedule auto-eval — reads from ref, not closure ─────────────────────────
+  const scheduleAutoEval = useCallback(() => {
+    clearTimeout(autoEvalRef.current);
+    clearInterval(autoEvalCountdownRef.current);
+    if (!latestTranscriptRef.current.trim()) return;
 
+    let countdown = 6;
+    setAutoEvalCountdown(countdown);
+    autoEvalCountdownRef.current = setInterval(() => {
+      countdown -= 1;
+      setAutoEvalCountdown(prev => {
+        if (prev === null) return null;
+        return countdown;
+      });
+      if (countdown <= 0) {
+        clearInterval(autoEvalCountdownRef.current);
+        setAutoEvalCountdown(null);
+      }
+    }, 1000);
+
+    autoEvalRef.current = setTimeout(() => {
+      setAutoEvalCountdown(null);
+      submitWithLatestTranscript(); // reads ref — always fresh ✓
+    }, 6000);
+  }, [submitWithLatestTranscript]);
+
+  // Stop recognition without cancelling auto-eval (used internally)
+  const stopListeningOnly = () => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+    setTimerActive(false);
+  };
+
+  const startListening = () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return toast.error('Speech recognition not supported. Use Chrome.');
+  const rec = new SR();
+  rec.lang = 'en-US'; rec.continuous = true; rec.interimResults = true;
+  rec.onstart = () => { setIsListening(true); setTimerActive(true); setTimeLeft(120); };
+
+  // ✅ YAHI MISSING THA — wapas lagao
+  let finalAccumulated = '';
+  rec.onresult = (e) => {
+    let finalChunk = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalChunk += e.results[i][0].transcript;
+    }
+    if (finalChunk) {
+      finalAccumulated += ' ' + finalChunk;
+      const trimmed = finalAccumulated.trim();
+      latestTranscriptRef.current = trimmed;  // ref update
+      setTranscript(trimmed);                 // UI update
+    }
+  };
+
+  rec.onerror = (e) => {
+    if (e.error !== 'no-speech') toast.error('Mic error: ' + e.error);
+    setIsListening(false); setTimerActive(false);
+  };
+  rec.onend = () => { setIsListening(false); setTimerActive(false); };
+  recognitionRef.current = rec;
+  rec.start();
+};
+
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+    setTimerActive(false);
+    cancelAutoEval();
+  };
+
+  // ── Generate questions — passes questionCount correctly ───────────────────────
   const generateQuestions = async () => {
     setLoading(true);
     try {
+      // Ensure count is valid before sending
+      const count = Math.min(Math.max(parseInt(form.questionCount) || 5, 5), 15);
+
       let data;
       if (setupTab === 'form') {
-        const res = await axios.post(`${API}/resume/mock-interview`, { ...form }, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.post(`${API}/resume/mock-interview`, {
+          role: form.role,
+          level: form.level,
+          skills: form.skills,
+          company: form.company,
+          questionCount: count,   // ← explicitly pass validated count
+        }, { headers: { Authorization: `Bearer ${token}` } });
         data = res.data;
       } else {
         if (!file) return toast.error('Upload a PDF first');
-        const fd = new FormData(); fd.append('resume', file);
-        const res = await axios.post(`${API}/resume/mock-interview-resume`, fd, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } });
+        const fd = new FormData();
+        fd.append('resume', file);
+        fd.append('questionCount', count);        // ← multipart field
+        const res = await axios.post(`${API}/resume/mock-interview-resume`, fd, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+        });
         data = res.data;
       }
-      setQuestions(data.questions || []);
-      setAnswers(new Array(data.questions.length).fill(''));
-      setFeedbacks(new Array(data.questions.length).fill(null));
+
+      // Sort: Easy → Medium → Hard (progressive difficulty)
+      const diffOrder = { Easy: 0, Medium: 1, Hard: 2 };
+      const sorted = (data.questions || []).sort((a, b) =>
+        (diffOrder[a.difficulty] ?? 1) - (diffOrder[b.difficulty] ?? 1)
+      );
+
+      setQuestions(sorted);
+      setAnswers(new Array(sorted.length).fill(''));
+      setFeedbacks(new Array(sorted.length).fill(null));
       setStage(STAGES.READY);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to generate questions');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Evaluate answer ────────────────────────────────────────────────────────
+  const handleSubmitAnswerWithTranscript = async (answerText) => {
+    if (!answerText.trim()) return;
+    stopListeningOnly();
+    synthRef.current?.cancel();
+
+    const newAnswers = [...answers];
+    newAnswers[currentQ] = answerText;
+    setAnswers(newAnswers);
+
+    setEvalLoading(true);
+    setCurrentFeedback(null);
+    try {
+      const res = await axios.post(`${API}/resume/evaluate-answer`, {
+        question: questions[currentQ].question,
+        answer: answerText,
+        role: form.role || 'General',
+        level: form.level || 'Junior',
+      }, { headers: { Authorization: `Bearer ${token}` } });
+
+      const fb = res.data.feedback;
+      const newFeedbacks = [...feedbacks];
+      newFeedbacks[currentQ] = fb;
+      setFeedbacks(newFeedbacks);
+      setCurrentFeedback(fb);
+    } catch {
+      toast.error('Evaluation failed');
+    } finally {
+      setEvalLoading(false);
+    }
   };
 
   const handleSubmitAnswer = async () => {
-    const answer = answerMode === 'voice' ? transcript : textAnswer;
+    const answer = answerMode === 'voice' ? latestTranscriptRef.current : textAnswer;
     if (!answer.trim()) return toast.error('Please give an answer first');
-    stopListening(); synthRef.current?.cancel();
-    const newAnswers = [...answers]; newAnswers[currentQ] = answer; setAnswers(newAnswers);
-    setEvalLoading(true); setCurrentFeedback(null);
-    try {
-      const res = await axios.post(`${API}/resume/evaluate-answer`, {
-        question: questions[currentQ].question, answer, role: form.role || 'General', level: form.level || 'Junior',
-      }, { headers: { Authorization: `Bearer ${token}` } });
-      const fb = res.data.feedback;
-      const newFeedbacks = [...feedbacks]; newFeedbacks[currentQ] = fb;
-      setFeedbacks(newFeedbacks); setCurrentFeedback(fb);
-    } catch { toast.error('Evaluation failed'); }
-    finally { setEvalLoading(false); }
+    cancelAutoEval();
+    await handleSubmitAnswerWithTranscript(answer);
   };
 
   const goNextQuestion = () => {
-    setTranscript(''); setTextAnswer(''); setCurrentFeedback(null); synthRef.current?.cancel();
+    setTranscript('');
+    latestTranscriptRef.current = '';
+    setTextAnswer('');
+    setCurrentFeedback(null);
+    synthRef.current?.cancel();
+    cancelAutoEval();
     if (currentQ + 1 >= questions.length) finishInterview();
     else setCurrentQ(q => q + 1);
   };
 
+  // ── Finish — save to DB then generate final report ────────────────────────
   const finishInterview = async () => {
-    setStage(STAGES.FINISHED); setLoading(true);
+    setStage(STAGES.FINISHED);
+    setLoading(true);
     try {
-      const res = await axios.post(`${API}/resume/final-report`, {
-        questions: questions.map(q => q.question), answers, feedbacks, role: form.role || 'General', level: form.level || 'Junior',
+      // Save session to MongoDB first
+      await axios.post(`${API}/resume/interview-sessions`, {
+        questions,
+        answers,
+        feedbacks,
+        finalReport: null,
+        role: form.role || 'General',
+        level: form.level || 'Junior',
       }, { headers: { Authorization: `Bearer ${token}` } });
+
+      // Then generate final report
+      const res = await axios.post(`${API}/resume/final-report`, {
+        questions: questions.map(q => q.question),
+        answers,
+        feedbacks,
+        role: form.role || 'General',
+        level: form.level || 'Junior',
+      }, { headers: { Authorization: `Bearer ${token}` } });
+
       setFinalReport(res.data.report);
-    } catch { toast.error('Could not generate final report'); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error('Could not generate final report');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetAll = () => {
-    synthRef.current?.cancel(); stopListening();
-    setStage(STAGES.SETUP); setQuestions([]); setAnswers([]); setFeedbacks([]);
-    setFinalReport(null); setCurrentQ(0); setTranscript(''); setTextAnswer('');
-    setCurrentFeedback(null); setForm({ role: '', level: 'Junior', skills: '', company: '' }); setFile(null);
+    synthRef.current?.cancel();
+    stopListening();
+    setStage(STAGES.SETUP);
+    setQuestions([]);
+    setAnswers([]);
+    setFeedbacks([]);
+    setFinalReport(null);
+    setCurrentQ(0);
+    setTranscript('');
+    latestTranscriptRef.current = '';
+    setTextAnswer('');
+    setCurrentFeedback(null);
+    setForm({ role: '', level: 'Junior', skills: '', company: '', questionCount: 5 });
+    setFile(null);
+    setAutoEvalCountdown(null);
   };
 
+  const handleBackFromInterview = () => setShowBackConfirm(true);
+  const confirmBack = () => { setShowBackConfirm(false); resetAll(); };
+
   const avgScore = feedbacks.filter(Boolean).length
-    ? Math.round(feedbacks.filter(Boolean).reduce((a, f) => a + (f?.score || 0), 0) / feedbacks.filter(Boolean).length) : 0;
+    ? Math.round(feedbacks.filter(Boolean).reduce((a, f) => a + (f?.score || 0), 0) / feedbacks.filter(Boolean).length)
+    : 0;
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-  // ── SETUP STAGE ───────────────────────────────────────────────────────────
+  const QUESTION_COUNT_OPTIONS = [5, 8, 10, 15];
+
+  // ── SETUP STAGE ───────────────────────────────────────────────────────────────
   if (stage === STAGES.SETUP) return (
     <div className="flex min-h-screen bg-slate-950">
+      {showHistory && <HistoryPanel onClose={() => setShowHistory(false)} token={token} />}
 
-      {/* LEFT SIDEBAR */}
       <aside className="w-64 flex-shrink-0 border-r border-white/5 p-5 flex flex-col gap-2">
         <div className="mb-4">
           <h2 className="text-white font-bold text-base">Mock Interview</h2>
           <p className="text-slate-500 text-xs mt-0.5">AI Interview Simulator</p>
         </div>
-
         <SideNavItem icon={Settings} label="Setup" active />
         <SideNavItem icon={BookOpen} label="Ready" />
         <SideNavItem icon={MessageSquare} label="Interview" />
         <SideNavItem icon={BarChart3} label="Report" />
 
         <div className="mt-auto pt-4 border-t border-white/5 space-y-3">
+          <button onClick={() => setShowHistory(true)}
+            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 text-sm font-medium hover:bg-white/5 transition">
+            <History size={14} className="text-sky-400" /> View History
+          </button>
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Features</p>
           {[
             { icon: Mic, label: 'Voice Answers' },
@@ -312,9 +625,7 @@ export default function MockInterviewPage() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 overflow-y-auto">
-        {/* Header bar */}
         <div className="flex items-center justify-between px-8 py-5 border-b border-white/5">
           <div>
             <h1 className="text-white font-bold text-xl">Interview Setup</h1>
@@ -327,7 +638,6 @@ export default function MockInterviewPage() {
         </div>
 
         <div className="px-8 py-7">
-          {/* Stats row */}
           <div className="grid grid-cols-4 gap-4 mb-8">
             <StatCard icon={Target} label="Mode" value="AI Powered" color="sky" />
             <StatCard icon={Clock} label="Per Question" value="2 Minutes" color="yellow" />
@@ -350,7 +660,6 @@ export default function MockInterviewPage() {
             ))}
           </div>
 
-          {/* Form / Resume */}
           <div className="grid grid-cols-3 gap-6">
             <div className="col-span-2">
               {setupTab === 'form' ? (
@@ -385,6 +694,33 @@ export default function MockInterviewPage() {
                         className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600 transition" />
                     </div>
                   </div>
+
+                  {/* Question Count Selector */}
+                  <div className="mb-5">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
+                      <Hash size={12} className="text-sky-400" /> Number of Questions
+                    </label>
+                    <div className="flex gap-2">
+                      {QUESTION_COUNT_OPTIONS.map(count => (
+                        <button key={count} onClick={() => setForm(p => ({ ...p, questionCount: count }))}
+                          className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all border ${
+                            form.questionCount === count
+                              ? 'bg-sky-500/20 border-sky-500/50 text-sky-300'
+                              : 'bg-slate-800 border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                          }`}>
+                          {count}
+                          {count === 5 && <span className="block text-xs font-normal opacity-60">Quick</span>}
+                          {count === 8 && <span className="block text-xs font-normal opacity-60">Standard</span>}
+                          {count === 10 && <span className="block text-xs font-normal opacity-60">Full</span>}
+                          {count === 15 && <span className="block text-xs font-normal opacity-60">Deep Dive</span>}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1.5">
+                      Questions progress from Easy → Medium → Hard
+                    </p>
+                  </div>
+
                   <button onClick={generateQuestions} disabled={loading || !form.role || !form.skills}
                     className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-40 flex items-center justify-center gap-2">
                     {loading ? <><Loader2 size={16} className="animate-spin" /> Generating Questions...</> : <><Mic size={16} /> Start Mock Interview</>}
@@ -396,7 +732,7 @@ export default function MockInterviewPage() {
                     <Upload size={16} className="text-sky-400" /> Upload Your Resume
                   </h3>
                   <div onClick={() => fileRef.current.click()}
-                    className="border-2 border-dashed border-white/10 rounded-xl p-12 text-center cursor-pointer hover:border-sky-500/50 hover:bg-sky-500/5 transition mb-5">
+                    className="border-2 border-dashed border-white/10 rounded-xl p-12 text-center cursor-pointer hover:border-sky-500/50 hover:bg-sky-500/5 transition mb-4">
                     <Upload size={32} className="mx-auto mb-3 text-slate-500" />
                     {file
                       ? <p className="text-sky-400 font-medium text-sm">{file.name}</p>
@@ -404,6 +740,25 @@ export default function MockInterviewPage() {
                           <p className="text-slate-500 text-xs mt-1">We'll generate questions based on your resume</p></>}
                     <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files[0])} />
                   </div>
+
+                  <div className="mb-4">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
+                      <Hash size={12} className="text-sky-400" /> Number of Questions
+                    </label>
+                    <div className="flex gap-2">
+                      {QUESTION_COUNT_OPTIONS.map(count => (
+                        <button key={count} onClick={() => setForm(p => ({ ...p, questionCount: count }))}
+                          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all border ${
+                            form.questionCount === count
+                              ? 'bg-sky-500/20 border-sky-500/50 text-sky-300'
+                              : 'bg-slate-800 border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                          }`}>
+                          {count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <button onClick={generateQuestions} disabled={loading || !file}
                     className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-40 flex items-center justify-center gap-2">
                     {loading ? <><Loader2 size={16} className="animate-spin" /> Analyzing Resume...</> : <><Mic size={16} /> Start Mock Interview</>}
@@ -412,7 +767,6 @@ export default function MockInterviewPage() {
               )}
             </div>
 
-            {/* Right tip panel */}
             <div className="space-y-4">
               <div className="bg-slate-900 border border-white/5 rounded-2xl p-5">
                 <p className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
@@ -420,10 +774,10 @@ export default function MockInterviewPage() {
                 </p>
                 <div className="space-y-3">
                   {[
-                    { step: '01', text: 'Fill your details or upload resume' },
-                    { step: '02', text: 'AI generates tailored questions' },
-                    { step: '03', text: 'Answer by voice or text' },
-                    { step: '04', text: 'Get instant scores & feedback' },
+                    { step: '01', text: 'Fill details or upload resume' },
+                    { step: '02', text: 'Choose question count (5–15)' },
+                    { step: '03', text: 'Questions go Easy → Hard progressively' },
+                    { step: '04', text: 'Answer by voice — auto-evaluates after silence' },
                     { step: '05', text: 'Download full PDF report' },
                   ].map(({ step, text }) => (
                     <div key={step} className="flex items-start gap-3">
@@ -433,12 +787,13 @@ export default function MockInterviewPage() {
                   ))}
                 </div>
               </div>
-
               <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4">
                 <p className="text-violet-300 font-semibold text-xs mb-2 flex items-center gap-1.5">
                   <Star size={13} /> Pro Tip
                 </p>
-                <p className="text-slate-400 text-xs leading-relaxed">Use Chrome for the best voice recognition experience. Ensure mic permissions are granted.</p>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  Voice answers auto-submit after 6 seconds of silence — just speak naturally and pause when done!
+                </p>
               </div>
             </div>
           </div>
@@ -447,7 +802,7 @@ export default function MockInterviewPage() {
     </div>
   );
 
-  // ── READY STAGE ───────────────────────────────────────────────────────────
+  // ── READY STAGE ───────────────────────────────────────────────────────────────
   if (stage === STAGES.READY) return (
     <div className="flex min-h-screen bg-slate-950">
       <aside className="w-64 flex-shrink-0 border-r border-white/5 p-5 flex flex-col gap-2">
@@ -459,11 +814,19 @@ export default function MockInterviewPage() {
         <SideNavItem icon={BookOpen} label="Ready" active />
         <SideNavItem icon={MessageSquare} label="Interview" />
         <SideNavItem icon={BarChart3} label="Report" />
-        <div className="mt-auto pt-4 border-t border-white/5">
+        <div className="mt-auto pt-4 border-t border-white/5 space-y-2">
           <div className="bg-slate-900 rounded-xl p-3 border border-white/5">
             <p className="text-xs text-slate-500 mb-1">Questions ready</p>
             <p className="text-white font-bold text-lg">{questions.length}</p>
           </div>
+          <div className="bg-slate-900 rounded-xl p-3 border border-white/5">
+            <p className="text-xs text-slate-500 mb-1">Difficulty</p>
+            <p className="text-xs text-sky-400 font-medium">Easy → Medium → Hard</p>
+          </div>
+          <button onClick={resetAll}
+            className="w-full flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-slate-400 text-xs hover:bg-white/5 transition">
+            <ArrowLeft size={13} /> Back to Setup
+          </button>
         </div>
       </aside>
 
@@ -479,11 +842,10 @@ export default function MockInterviewPage() {
         </div>
 
         <div className="px-8 py-7 max-w-3xl">
-          {/* Mode select */}
           <div className="grid grid-cols-2 gap-4 mb-7">
             {[
-              { mode: 'voice', icon: Mic, title: 'Voice Mode', desc: 'Speak your answers aloud. Mic starts automatically after each question.' },
-              { mode: 'text', icon: MessageSquare, title: 'Text Mode', desc: 'Type your answers. Great if you prefer keyboard or can\'t use mic.' },
+              { mode: 'voice', icon: Mic, title: 'Voice Mode', desc: 'Speak your answers. Auto-evaluates after 6 seconds of silence.' },
+              { mode: 'text', icon: MessageSquare, title: 'Text Mode', desc: "Type your answers. Great if you prefer keyboard or can't use mic." },
             ].map(({ mode, icon: Icon, title, desc }) => (
               <button key={mode} onClick={() => setAnswerMode(mode)}
                 className={`p-5 rounded-2xl border text-left transition-all ${answerMode === mode
@@ -499,7 +861,6 @@ export default function MockInterviewPage() {
             ))}
           </div>
 
-          {/* Instructions */}
           <div className="bg-slate-900 border border-white/5 rounded-2xl p-5 mb-6">
             <p className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
               <BookOpen size={15} className="text-sky-400" /> Instructions
@@ -507,9 +868,11 @@ export default function MockInterviewPage() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { icon: Volume2, text: 'AI reads each question aloud' },
-                { icon: Clock, text: '2 minutes per question' },
-                { icon: answerMode === 'voice' ? Mic : MessageSquare, text: answerMode === 'voice' ? 'Mic auto-starts after question' : 'Type your answer in the box' },
+                { icon: Clock, text: '2 minutes max per question' },
+                { icon: answerMode === 'voice' ? Mic : MessageSquare, text: answerMode === 'voice' ? 'Auto-evaluates after 6s silence' : 'Type and submit your answer' },
                 { icon: Zap, text: 'Instant score & feedback after each answer' },
+                { icon: TrendingUp, text: 'Questions get harder as you progress' },
+                { icon: History, text: 'Session saved to history automatically' },
               ].map(({ icon: Icon, text }, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-sky-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -523,21 +886,22 @@ export default function MockInterviewPage() {
 
           <button onClick={() => setStage(STAGES.INTERVIEWING)}
             className="w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-bold text-sm hover:opacity-90 transition flex items-center justify-center gap-2">
-            <Play size={16} /> Begin Interview
+            <Play size={16} /> Begin Interview ({questions.length} Questions)
           </button>
         </div>
       </main>
     </div>
   );
 
-  // ── INTERVIEWING STAGE ────────────────────────────────────────────────────
+  // ── INTERVIEWING STAGE ────────────────────────────────────────────────────────
   if (stage === STAGES.INTERVIEWING) {
     const q = questions[currentQ];
     const answered = !!currentFeedback;
 
     return (
       <div className="flex min-h-screen bg-slate-950">
-        {/* Sidebar — question list */}
+        {showBackConfirm && <BackConfirmModal onConfirm={confirmBack} onCancel={() => setShowBackConfirm(false)} />}
+
         <aside className="w-64 flex-shrink-0 border-r border-white/5 p-5 flex flex-col gap-2">
           <div className="mb-2">
             <h2 className="text-white font-bold text-base">Mock Interview</h2>
@@ -549,6 +913,7 @@ export default function MockInterviewPage() {
               const fb = feedbacks[i];
               const isCurrent = i === currentQ;
               const isDone = !!fb;
+              const diff = questions[i]?.difficulty;
               return (
                 <div key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all
                   ${isCurrent ? 'bg-sky-500/15 border border-sky-500/25' : 'hover:bg-white/5'}`}>
@@ -558,20 +923,18 @@ export default function MockInterviewPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className={`text-xs truncate ${isCurrent ? 'text-sky-300 font-medium' : isDone ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Q{i + 1}: {q?.category || 'Question'}
+                      {questions[i]?.category || 'Question'}
+                      {diff && <span className={`ml-1 ${diff === 'Easy' ? 'text-emerald-500' : diff === 'Medium' ? 'text-yellow-500' : 'text-red-500'}`}>· {diff}</span>}
                     </p>
-                    {isDone && (
-                      <p className={`text-xs font-bold ${scoreColor(fb.score)}`}>{fb.score}/100</p>
-                    )}
+                    {isDone && <p className={`text-xs font-bold ${scoreColor(fb.score)}`}>{fb.score}/100</p>}
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Timer in sidebar */}
           {timerActive && (
-            <div className={`mt-auto p-3 rounded-xl border ${timeLeft < 30 ? 'bg-red-500/10 border-red-500/30' : 'bg-slate-900 border-white/5'}`}>
+            <div className={`p-3 rounded-xl border ${timeLeft < 30 ? 'bg-red-500/10 border-red-500/30' : 'bg-slate-900 border-white/5'}`}>
               <div className="flex items-center gap-2 mb-1">
                 <Clock size={13} className={timeLeft < 30 ? 'text-red-400' : 'text-slate-400'} />
                 <span className="text-xs text-slate-400">Time Left</span>
@@ -579,17 +942,32 @@ export default function MockInterviewPage() {
               <p className={`font-mono font-bold text-xl ${timeLeft < 30 ? 'text-red-400' : 'text-white'}`}>{fmt(timeLeft)}</p>
             </div>
           )}
+
+          <button onClick={handleBackFromInterview}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-slate-400 text-xs hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition">
+            <ArrowLeft size={13} /> Exit Interview
+          </button>
         </aside>
 
         <main className="flex-1 overflow-y-auto">
-          {/* Top bar */}
           <div className="flex items-center justify-between px-8 py-4 border-b border-white/5">
             <div className="flex items-center gap-3">
+              <button onClick={handleBackFromInterview}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition mr-2">
+                <ArrowLeft size={14} /> Back
+              </button>
               <span className="text-sm text-slate-400">Question {currentQ + 1} of {questions.length}</span>
               <div className="w-40 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                 <div className="h-1.5 bg-gradient-to-r from-sky-500 to-violet-600 rounded-full transition-all"
-                  style={{ width: `${((currentQ) / questions.length) * 100}%` }} />
+                  style={{ width: `${(currentQ / questions.length) * 100}%` }} />
               </div>
+              {q?.difficulty && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  q.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400' :
+                  q.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400' :
+                  'bg-red-500/10 text-red-400'
+                }`}>{q.difficulty}</span>
+              )}
             </div>
             <button onClick={() => setAnswerMode(m => m === 'voice' ? 'text' : 'voice')}
               className="flex items-center gap-2 text-xs text-slate-400 border border-white/10 px-3 py-1.5 rounded-lg hover:text-white hover:border-white/20 transition">
@@ -598,13 +976,16 @@ export default function MockInterviewPage() {
           </div>
 
           <div className="px-8 py-6 grid grid-cols-3 gap-6">
-            {/* Question + answer (col 1-2) */}
             <div className="col-span-2 space-y-4">
               {/* Question card */}
               <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-3">
                   {q?.category && <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded-full">{q.category}</span>}
-                  {q?.difficulty && <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded-full">{q.difficulty}</span>}
+                  {q?.difficulty && <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    q.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400' :
+                    q.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400' :
+                    'bg-red-500/10 text-red-400'
+                  }`}>{q.difficulty}</span>}
                 </div>
                 <p className="text-white font-medium text-base leading-relaxed">{q?.question}</p>
                 {isSpeaking && (
@@ -634,20 +1015,25 @@ export default function MockInterviewPage() {
                           } disabled:opacity-30`}>
                           {isListening ? <Square size={24} className="text-white" /> : <Mic size={28} className="text-slate-300" />}
                         </button>
-                        <p className="text-sm text-slate-400">
+                        <p className="text-sm text-slate-400 text-center">
                           {isSpeaking ? 'Wait for question to finish...' : isListening ? 'Listening... Click to stop' : 'Click mic to start answering'}
                         </p>
                       </div>
+
                       {transcript && (
-                        <div className="bg-slate-800 rounded-xl p-4 mb-4">
+                        <div className="bg-slate-800 rounded-xl p-4 mb-3">
                           <p className="text-xs text-slate-500 mb-1.5">Your answer:</p>
                           <p className="text-sm text-slate-200 leading-relaxed">{transcript}</p>
                         </div>
                       )}
+
+                      {/* Auto-eval countdown */}
+                      
+
                       {transcript && (
                         <button onClick={handleSubmitAnswer} disabled={evalLoading}
                           className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                          {evalLoading ? <><Loader2 size={15} className="animate-spin" /> Evaluating...</> : <><CheckCheck size={15} /> Submit Answer</>}
+                          {evalLoading ? <><Loader2 size={15} className="animate-spin" /> Evaluating...</> : <><CheckCheck size={15} /> Submit Now</>}
                         </button>
                       )}
                     </div>
@@ -665,14 +1051,12 @@ export default function MockInterviewPage() {
                 </div>
               )}
 
-              {/* Evaluating */}
               {evalLoading && (
                 <div className="flex items-center justify-center gap-3 py-8 text-slate-400 text-sm bg-slate-900 border border-white/5 rounded-2xl">
                   <Loader2 size={18} className="text-sky-400 animate-spin" /> Evaluating your answer...
                 </div>
               )}
 
-              {/* Feedback */}
               {currentFeedback && !evalLoading && (
                 <div className="space-y-3">
                   <div className={`flex items-center justify-between p-5 rounded-2xl border ${scoreBg(currentFeedback.score)}`}>
@@ -689,7 +1073,6 @@ export default function MockInterviewPage() {
                       </p>
                     </div>
                   </div>
-
                   {currentFeedback.good && (
                     <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
                       <p className="text-xs text-emerald-400 font-semibold mb-1.5 flex items-center gap-1.5"><CheckCircle2 size={13} /> What you did well</p>
@@ -708,7 +1091,6 @@ export default function MockInterviewPage() {
                       <p className="text-sm text-slate-300 leading-relaxed">{currentFeedback.ideal}</p>
                     </div>
                   )}
-
                   <button onClick={goNextQuestion}
                     className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-bold text-sm hover:opacity-90 transition flex items-center justify-center gap-2">
                     {currentQ + 1 >= questions.length ? <><BarChart3 size={15} /> View Final Report</> : <>Next Question <ArrowRight size={15} /></>}
@@ -757,6 +1139,8 @@ export default function MockInterviewPage() {
                   })}
                 </div>
               </div>
+
+             
             </div>
           </div>
         </main>
@@ -764,7 +1148,7 @@ export default function MockInterviewPage() {
     );
   }
 
-  // ── FINISHED STAGE ────────────────────────────────────────────────────────
+  // ── FINISHED STAGE ────────────────────────────────────────────────────────────
   if (stage === STAGES.FINISHED) return (
     <div className="flex min-h-screen bg-slate-950">
       <aside className="w-64 flex-shrink-0 border-r border-white/5 p-5 flex flex-col gap-2">
@@ -778,6 +1162,10 @@ export default function MockInterviewPage() {
         <SideNavItem icon={BarChart3} label="Report" active />
 
         <div className="mt-auto pt-4 border-t border-white/5 space-y-2">
+          <button onClick={() => setShowHistory(true)}
+            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 text-sm font-medium hover:bg-white/5 transition">
+            <History size={14} className="text-sky-400" /> View History
+          </button>
           <button onClick={resetAll}
             className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 text-sm font-medium hover:bg-white/5 transition">
             <RotateCcw size={14} /> New Interview
@@ -791,6 +1179,8 @@ export default function MockInterviewPage() {
         </div>
       </aside>
 
+      {showHistory && <HistoryPanel onClose={() => setShowHistory(false)} token={token} />}
+
       <main className="flex-1 overflow-y-auto">
         <div className="flex items-center justify-between px-8 py-5 border-b border-white/5">
           <div>
@@ -802,7 +1192,6 @@ export default function MockInterviewPage() {
         </div>
 
         <div className="px-8 py-6">
-          {/* Top stats */}
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className={`col-span-1 p-5 rounded-2xl border ${scoreBg(avgScore)} flex flex-col items-center justify-center text-center`}>
               <p className="text-xs text-slate-500 mb-1">Overall Score</p>
@@ -817,9 +1206,7 @@ export default function MockInterviewPage() {
           </div>
 
           <div className="grid grid-cols-3 gap-6">
-            {/* Score breakdown + final report */}
             <div className="col-span-2 space-y-5">
-              {/* Score bars */}
               <div className="bg-slate-900 border border-white/5 rounded-2xl p-5">
                 <p className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
                   <BarChart3 size={15} className="text-sky-400" /> Score Breakdown
@@ -830,6 +1217,10 @@ export default function MockInterviewPage() {
                     return (
                       <div key={i} className="flex items-center gap-3">
                         <span className="text-xs text-slate-500 w-6">Q{i+1}</span>
+                        <span className={`text-xs w-12 ${
+                          q.difficulty === 'Easy' ? 'text-emerald-500' :
+                          q.difficulty === 'Medium' ? 'text-yellow-500' : 'text-red-500'
+                        }`}>{q.difficulty}</span>
                         <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
                           <div className={`h-2 rounded-full transition-all ${scoreBar(fb?.score || 0)}`} style={{ width: `${fb?.score || 0}%` }} />
                         </div>
@@ -840,7 +1231,6 @@ export default function MockInterviewPage() {
                 </div>
               </div>
 
-              {/* Final report */}
               {loading && (
                 <div className="flex items-center justify-center gap-3 py-10 text-slate-400 text-sm bg-slate-900 border border-white/5 rounded-2xl">
                   <Loader2 size={18} className="text-sky-400 animate-spin" /> Generating final report...
@@ -879,7 +1269,6 @@ export default function MockInterviewPage() {
               )}
             </div>
 
-            {/* Right — per-Q mini cards */}
             <div className="space-y-3">
               <p className="text-white font-semibold text-sm flex items-center gap-2">
                 <ClipboardList size={15} className="text-sky-400" /> Per Question
@@ -889,7 +1278,13 @@ export default function MockInterviewPage() {
                 return (
                   <div key={i} className={`p-3 rounded-xl border ${fb ? scoreBg(fb.score) : 'bg-slate-900 border-white/5'}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-slate-400">Q{i+1}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-slate-400">Q{i+1}</span>
+                        <span className={`text-xs ${
+                          q.difficulty === 'Easy' ? 'text-emerald-500' :
+                          q.difficulty === 'Medium' ? 'text-yellow-500' : 'text-red-500'
+                        }`}>· {q.difficulty}</span>
+                      </div>
                       {fb ? <span className={`text-xs font-bold ${scoreColor(fb.score)}`}>{fb.score}/100</span>
                            : <span className="text-xs text-slate-600">—</span>}
                     </div>

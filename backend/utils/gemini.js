@@ -36,12 +36,23 @@ const callAI = async (prompt) => {
           if (parsed.error) {
             return reject(new Error(`Groq Error: ${parsed.error.message}`));
           }
-          if (parsed.choices?.[0]?.message?.content) {
-            let text = parsed.choices[0].message.content;
-            text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-            try {
-              return resolve(JSON.parse(text));
-            } catch {
+        if (parsed.choices?.[0]?.message?.content) {
+  let text = parsed.choices[0].message.content;
+
+  text = text
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
+
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+    if (!jsonMatch) {
+      throw new Error("No JSON found");
+    }
+
+    return resolve(JSON.parse(jsonMatch[0]));
+  } catch {
               return reject(new Error('JSON parse failed: ' + text.substring(0, 100)));
             }
           }
@@ -191,10 +202,22 @@ Generate 15 personalized questions referencing actual projects and experience.`;
 };
 
 // ─── MOCK INTERVIEW QUESTIONS FROM FORM ──────────────────────────────────────
-const generateMockInterviewQuestions = async ({ role, level, skills, company }) => {
+const generateMockInterviewQuestions = async ({ role, level, skills, company, questionCount = 5 }) => {
+  const count = Math.min(Math.max(parseInt(questionCount) || 5, 5), 15);
+
+  // Calculate split: ~30% Easy, ~40% Medium, ~30% Hard
+  const easyCount  = Math.round(count * 0.3);
+  const hardCount  = Math.round(count * 0.3);
+  const mediumCount = count - easyCount - hardCount;
+
   const prompt = `
-You are a senior interviewer. Generate 10 mock interview questions for a real interview simulation.
-Role: ${role}, Level: ${level}, Skills: ${skills}${company ? `, Company: ${company}` : ''}
+You are a senior interviewer. Generate EXACTLY ${count} mock interview questions for a real interview simulation.
+Role: ${role}, Level: ${level || 'Junior'}, Skills: ${skills}${company ? `, Company: ${company}` : ''}
+
+STRICT RULES:
+- Return EXACTLY ${count} questions in the array — not 9, not 11, exactly ${count}.
+- Difficulty distribution: ${easyCount} Easy, ${mediumCount} Medium, ${hardCount} Hard.
+- Mix categories: Technical, Behavioral, HR, System Design.
 
 Return ONLY raw JSON (no markdown, no backticks):
 {
@@ -206,21 +229,34 @@ Return ONLY raw JSON (no markdown, no backticks):
       "expectedKeyPoints": ["key point 1", "key point 2", "key point 3"]
     }
   ]
-}
-Exactly 10 questions: 4 Technical, 3 Behavioral, 2 HR, 1 System Design.`;
+}`;
+
   try { return await callAI(prompt); }
   catch (error) { throw new Error('Mock interview generation failed'); }
 };
 
 // ─── MOCK INTERVIEW QUESTIONS FROM RESUME ────────────────────────────────────
-const generateMockInterviewFromResume = async (resumeText) => {
+
+const generateMockInterviewFromResume = async (resumeText, questionCount = 5) => {
+  const count = Math.min(Math.max(parseInt(questionCount) || 5, 5), 15);
+
+  const easyCount   = Math.round(count * 0.3);
+  const hardCount   = Math.round(count * 0.3);
+  const mediumCount = count - easyCount - hardCount;
+
   const prompt = `
-Analyze this resume and generate 10 realistic mock interview questions tailored to this candidate.
+Analyze this resume and generate EXACTLY ${count} realistic mock interview questions tailored to this candidate.
 Resume: ${resumeText}
+
+STRICT RULES:
+- Return EXACTLY ${count} questions in the array — not 9, not 11, exactly ${count}.
+- Difficulty distribution: ${easyCount} Easy, ${mediumCount} Medium, ${hardCount} Hard.
+- Base questions on actual skills, projects, and experience from the resume.
+- Mix categories: Technical, Behavioral, HR, System Design.
 
 Return ONLY raw JSON (no markdown, no backticks):
 {
-  "role": "Detected target role",
+  "role": "Detected target role from resume",
   "questions": [
     {
       "question": "Specific question referencing their experience",
@@ -229,14 +265,22 @@ Return ONLY raw JSON (no markdown, no backticks):
       "expectedKeyPoints": ["key point 1", "key point 2"]
     }
   ]
-}
-Exactly 10 questions: 4 Technical, 3 Behavioral, 2 HR, 1 System Design.`;
+}`;
+
   try { return await callAI(prompt); }
   catch (error) { throw new Error('Mock interview generation failed'); }
 };
 
 // ─── EVALUATE ANSWER ──────────────────────────────────────────────────────────
 const evaluateAnswer = async ({ question, answer, role, level }) => {
+    if (!answer || answer.trim().length < 5) {
+    return {
+      score: 0,
+      good: "No meaningful answer was provided.",
+      improve: "Please provide a detailed answer to get proper evaluation.",
+      ideal: "A complete answer should cover the core concept with examples."
+    };
+  }
   const prompt = `
 Evaluate this interview answer strictly and fairly.
 Role: ${role}, Level: ${level}
