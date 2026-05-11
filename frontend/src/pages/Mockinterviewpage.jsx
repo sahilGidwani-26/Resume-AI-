@@ -296,7 +296,7 @@ export default function MockInterviewPage() {
   const [currentFeedback, setCurrentFeedback] = useState(null);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [, setAutoEvalCountdown] = useState(null);
+  // const [, setAutoEvalCountdown] = useState(null);
 
   const fileRef = useRef();
   const recognitionRef = useRef(null);
@@ -319,6 +319,7 @@ export default function MockInterviewPage() {
       submitWithLatestTranscript();
     }
     return () => clearTimeout(timerRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerActive, timeLeft]);
 
   // ── Speak question on enter interview ────────────────────────────────────────
@@ -326,6 +327,7 @@ export default function MockInterviewPage() {
     if (stage === STAGES.INTERVIEWING && questions[currentQ]) {
       setTimeout(() => speakText(questions[currentQ].question), 600);
     }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, currentQ]);
 
   // ── Clear timers on unmount ───────────────────────────────────────────────────
@@ -335,6 +337,7 @@ export default function MockInterviewPage() {
       clearInterval(autoEvalCountdownRef.current);
       clearTimeout(timerRef.current);
     };
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const speakText = (text) => {
@@ -361,7 +364,7 @@ export default function MockInterviewPage() {
   const cancelAutoEval = () => {
     clearTimeout(autoEvalRef.current);
     clearInterval(autoEvalCountdownRef.current);
-    setAutoEvalCountdown(null);
+    // setAutoEvalCountdown(null);
   };
 
   // ── Schedule auto-eval — reads from ref, not closure ─────────────────────────
@@ -577,7 +580,7 @@ export default function MockInterviewPage() {
     setCurrentFeedback(null);
     setForm({ role: '', level: 'Junior', skills: '', company: '', questionCount: 5 });
     setFile(null);
-    setAutoEvalCountdown(null);
+    // setAutoEvalCountdown(null);
   };
 
   const handleBackFromInterview = () => setShowBackConfirm(true);
