@@ -11,7 +11,7 @@ import {
   ArrowLeft, History, X, Hash
 } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API = 'https://resume-ai-2-91mv.onrender.com/api';
 const STAGES = { SETUP: 'setup', READY: 'ready', INTERVIEWING: 'interviewing', FINISHED: 'finished' };
 
 const scoreColor = (s) => {

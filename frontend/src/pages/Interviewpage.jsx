@@ -8,7 +8,7 @@ import {
   Briefcase, Layers, Star, TrendingUp, Zap, BookOpen, CheckCircle2
 } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API = 'https://resume-ai-2-91mv.onrender.com/api';
 
 const difficultyColors = {
   Easy: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
@@ -196,7 +196,7 @@ export default function InterviewPage() {
         <form onSubmit={handleFormSubmit} className="bg-slate-900 border border-white/5 rounded-2xl p-6 space-y-4 mb-6 w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-sm text-slate-400 mb-1.5 items-center gap-1.5">
                 <Briefcase size={13} /> Target Role *
               </label>
               <input type="text" placeholder="e.g. Frontend Developer" value={form.role}
@@ -204,7 +204,7 @@ export default function InterviewPage() {
                 className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-sm text-slate-400 mb-1.5 items-center gap-1.5">
                 <TrendingUp size={13} /> Experience Level
               </label>
               <select value={form.level} onChange={e => setForm(p => ({ ...p, level: e.target.value }))}
@@ -213,7 +213,7 @@ export default function InterviewPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-sm text-slate-400 mb-1.5 items-center gap-1.5">
                 <Zap size={13} /> Your Skills *
               </label>
               <input type="text" placeholder="e.g. React, Node.js, MongoDB" value={form.skills}
@@ -221,7 +221,7 @@ export default function InterviewPage() {
                 className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white text-sm focus:outline-none focus:border-sky-500 placeholder:text-slate-600" />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-sm text-slate-400 mb-1.5 items-center gap-1.5">
                 <Star size={13} /> Target Company (optional)
               </label>
               <input type="text" placeholder="e.g. Google, TCS, Infosys" value={form.company}

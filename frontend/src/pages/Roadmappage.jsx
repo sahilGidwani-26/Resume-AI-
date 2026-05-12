@@ -8,7 +8,7 @@ import {
   CheckCircle2, BookOpen, Route,
 } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API = 'https://resume-ai-2-91mv.onrender.com/api';
 
 const steps_form = [
   { label: 'Target Role', key: 'role', placeholder: 'e.g. Full Stack Developer', type: 'text', Icon: Briefcase },
