@@ -10,7 +10,7 @@ import {
 import { toast } from 'react-hot-toast';
 
 /* ────────────── Constants ────────────── */
- const API_URL = `${process.env.VITE_API_URL}/notes`;
+ const API_URL = 'https://resume-ai-2-91mv.onrender.com/api/notes';
 
 const TYPES = [
   { value: 'note',     label: 'Notes',    icon: StickyNote,   color: 'text-amber-400',  activeBg: 'bg-amber-500/10 border-amber-500/20' },
